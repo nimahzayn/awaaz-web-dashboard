@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAFAF8;
+  --foreground: #231F20;
+  --surface: #FFFFFF;
+  --muted: #F4F4F2;
+  --muted-foreground: #6B6B68;
+  --border: #E8E8E4;
+  --primary: #E7436D;
+  --primary-foreground: #FFFFFF;
+  --purple: #B07AE6;
+  --blue: #339CFF;
+  --coral: #F08367;
+  --yellow: #FFBA4C;
+  --green: #44E6AD;
+  --lime: #B1E043;
+  --dark: #231F20;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-purple: var(--purple);
+  --color-blue: var(--blue);
+  --color-coral: var(--coral);
+  --color-yellow: var(--yellow);
+  --color-green: var(--green);
+  --color-lime: var(--lime);
+  --color-dark: var(--dark);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Recharts tooltip styling */
+.recharts-default-tooltip {
+  border-radius: 0.75rem !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 12px rgba(35, 31, 32, 0.08) !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}

@@ -7,7 +7,12 @@ import { MetricCard } from "@/components/cards/MetricCard";
 import { WordCloudPlaceholder } from "@/components/charts/WordCloudPlaceholder";
 import { LikertPlaceholder } from "@/components/charts/LikertPlaceholder";
 import { BarChart } from "@/components/charts/BarChart";
-import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
+import {
+  FILTER_WORKSHOPS,
+  FILTER_COHORTS,
+  TEAM_CHALLENGES,
+  TEAM_STRENGTHS,
+} from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
 import { computeAnalytics } from "@/services/analytics";
 

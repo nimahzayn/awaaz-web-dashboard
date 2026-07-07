@@ -19,8 +19,8 @@ export interface InsightData {
 
 export interface ChartDataPoint {
   name: string;
-  value: number;
-  [key: string]: string | number;
+  value?: number;
+  [key: string]: string | number | undefined;
 }
 
 export interface FacilitatorData {

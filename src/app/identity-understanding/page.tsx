@@ -44,7 +44,7 @@ export default async function IdentityUnderstandingPage() {
           ];
 
           return (
-            <div key={dimension.id} className="space-y-4">
+            <div key={dimension.topic} className="space-y-4">
               <ChartCard
                 title={dimension.topic}
                 description={`${dimension.topic} understanding across A, B, and C stages`}

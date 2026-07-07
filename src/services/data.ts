@@ -312,9 +312,7 @@ const PRE_WORKSHOP_RESPONSES: Array<Record<string, number | string>> = [
   },
 ];
 
-const POST_WORKSHOP_RESPONSES: Array<
-  Record<string, number | string | string[]>
-> = [
+const POST_WORKSHOP_RESPONSES = [
   {
     email: "maya@awaaz.org",
     q14Caste: 2.2,

@@ -34,7 +34,7 @@ export function WordCloudPlaceholder({
     <div
       className={cn(
         "relative flex min-h-[240px] flex-wrap items-center justify-center gap-3 rounded-xl bg-muted/50 p-8",
-        className
+        className,
       )}
       role="img"
       aria-label="Word cloud visualization placeholder"

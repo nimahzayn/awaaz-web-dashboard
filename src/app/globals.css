@@ -1,21 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAFAF8;
-  --foreground: #231F20;
-  --surface: #FFFFFF;
-  --muted: #F4F4F2;
-  --muted-foreground: #6B6B68;
-  --border: #E8E8E4;
-  --primary: #E7436D;
-  --primary-foreground: #FFFFFF;
-  --purple: #B07AE6;
-  --blue: #339CFF;
-  --coral: #F08367;
-  --yellow: #FFBA4C;
-  --green: #44E6AD;
-  --lime: #B1E043;
-  --dark: #231F20;
+  --background: #fafaf8;
+  --foreground: #231f20;
+  --surface: #ffffff;
+  --muted: #f4f4f2;
+  --muted-foreground: #6b6b68;
+  --border: #e8e8e4;
+  --primary: #e7436d;
+  --primary-foreground: #ffffff;
+  --purple: #b07ae6;
+  --blue: #339cff;
+  --coral: #f08367;
+  --yellow: #ffba4c;
+  --green: #44e6ad;
+  --lime: #b1e043;
+  --dark: #231f20;
+  --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", "SF Mono", Consolas, monospace;
 }
 
 @theme inline {
@@ -34,8 +36,8 @@
   --color-green: var(--green);
   --color-lime: var(--lime);
   --color-dark: var(--dark);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
@@ -48,7 +50,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Recharts tooltip styling */

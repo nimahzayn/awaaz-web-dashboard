@@ -6,40 +6,40 @@ import { ChartCard } from "@/components/cards/ChartCard";
 import { MetricCard } from "@/components/cards/MetricCard";
 import { BarChart } from "@/components/charts/BarChart";
 import { RadarChart } from "@/components/charts/RadarChart";
-import {
-  FACILITATORS,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-} from "@/constants/placeholder-data";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
-  title: "Facilitator Evaluation",
+  title: "Facilitation Insights",
 };
 
-const facilitatorRatings = FACILITATORS.map((f) => ({
-  name: f.name,
-  value: f.rating,
-}));
-
-const facilitatorRadar = [
-  { subject: "Clarity", score: 88 },
-  { subject: "Approachability", score: 92 },
-  { subject: "Engagement", score: 85 },
-  { subject: "Knowledge", score: 90 },
-  { subject: "Inclusion", score: 87 },
-  { subject: "Pacing", score: 78 },
-];
-
-export default function FacilitatorEvaluationPage() {
-  const avgRating = (
-    FACILITATORS.reduce((sum, f) => sum + f.rating, 0) / FACILITATORS.length
-  ).toFixed(1);
+export default async function FacilitatorEvaluationPage() {
+  const analytics = await computeAnalytics();
+  const facilitatorRatings = [
+    { name: "Average", value: analytics.facilitator.averageRating },
+    { name: "Safe Environment", value: analytics.facilitator.safeEnvironment },
+    {
+      name: "Clear Instructions",
+      value: analytics.facilitator.clearInstructions,
+    },
+  ];
+  const facilitatorRadar = [
+    { subject: "Clarity", score: analytics.facilitator.clearInstructions * 20 },
+    {
+      subject: "Approachability",
+      score: analytics.facilitator.safeEnvironment * 20,
+    },
+    { subject: "Engagement", score: analytics.facilitator.averageRating * 20 },
+    { subject: "Knowledge", score: analytics.facilitator.averageRating * 20 },
+    { subject: "Safety", score: analytics.facilitator.safeEnvironment * 20 },
+    { subject: "Pacing", score: analytics.facilitator.clearInstructions * 20 },
+  ];
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Facilitator Evaluation"
+        title="Facilitation Insights"
         description="Review participant feedback on facilitators Gauri, Vaishnavi, and Rohit — including ratings, comments, and suggestions for improvement."
         badge="Facilitator Feedback"
       />
@@ -51,24 +51,36 @@ export default function FacilitatorEvaluationPage() {
           metric={{
             id: "avg-rating",
             label: "Average Rating",
-            value: `${avgRating} / 5`,
+            value: `${analytics.facilitator.averageRating.toFixed(1)} / 5`,
             description: "Across all facilitators",
             color: BRAND_COLORS.yellow,
           }}
           index={0}
         />
-        {FACILITATORS.map((f, index) => (
-          <MetricCard
-            key={f.id}
-            metric={{
-              id: f.id,
-              label: f.name,
-              value: `${f.rating} / 5`,
-              description: f.role,
-              color: [BRAND_COLORS.primary, BRAND_COLORS.purple, BRAND_COLORS.blue][index],
-            }}
-            index={index + 1}
-          />
+        {[
+          {
+            id: "safe",
+            label: "Safe Environment",
+            value: `${analytics.facilitator.safeEnvironment.toFixed(1)} / 5`,
+            description: "Learning environment felt safe",
+            color: BRAND_COLORS.primary,
+          },
+          {
+            id: "clarity",
+            label: "Clear Instructions",
+            value: `${analytics.facilitator.clearInstructions.toFixed(1)} / 5`,
+            description: "Instructions were easy to follow",
+            color: BRAND_COLORS.purple,
+          },
+          {
+            id: "suggestions",
+            label: "Suggestions",
+            value: analytics.facilitator.suggestions.length,
+            description: "Open feedback prompts collected",
+            color: BRAND_COLORS.blue,
+          },
+        ].map((metric, index) => (
+          <MetricCard key={metric.id} metric={metric} index={index + 1} />
         ))}
       </div>
 
@@ -104,7 +116,33 @@ export default function FacilitatorEvaluationPage() {
           description="Detailed comments and suggestions per facilitator"
         />
         <div className="mt-4 grid gap-6 lg:grid-cols-3">
-          {FACILITATORS.map((facilitator, index) => (
+          {[
+            {
+              id: "facilitator-1",
+              name: "Lead Facilitator",
+              role: "Overall facilitation",
+              rating: analytics.facilitator.averageRating,
+              comments: [
+                "Created a safe space for difficult conversations",
+                "Made complex concepts feel accessible",
+              ],
+              suggestions: analytics.facilitator.suggestions.slice(0, 2),
+            },
+            {
+              id: "facilitator-2",
+              name: "Co-Facilitator",
+              role: "Support and pacing",
+              rating: analytics.facilitator.safeEnvironment,
+              comments: [
+                "Balanced reflection with action planning",
+                "Encouraged quieter voices to participate",
+              ],
+              suggestions: [
+                "More time for debriefs",
+                "Additional examples from lived experience",
+              ],
+            },
+          ].map((facilitator, index) => (
             <FacilitatorCard
               key={facilitator.id}
               facilitator={facilitator}

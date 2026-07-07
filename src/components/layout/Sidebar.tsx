@@ -69,9 +69,7 @@ export function Sidebar() {
             className="h-8 w-8 shrink-0"
             aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
-            {isOpen ? (
-              <X className="h-4 w-4 lg:hidden" />
-            ) : null}
+            <X className="h-4 w-4 lg:hidden" />
             <ChevronLeft
               className={cn(
                 "h-4 w-4 hidden lg:block transition-transform",

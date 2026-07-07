@@ -5,33 +5,32 @@ import { ChartCard } from "@/components/cards/ChartCard";
 import { ActivityCard } from "@/components/cards/ActivityCard";
 import { RadarChart } from "@/components/charts/RadarChart";
 import { BarChart } from "@/components/charts/BarChart";
-import {
-  TOP_ACTIVITIES,
-  BOTTOM_ACTIVITIES,
-  RADAR_DATA,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-} from "@/constants/placeholder-data";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
-  title: "Activity Effectiveness",
+  title: "Activity Impact",
 };
 
-const allActivities = [...TOP_ACTIVITIES, ...BOTTOM_ACTIVITIES].sort(
-  (a, b) => a.rank - b.rank
-);
-
-const activityBarData = allActivities.map((a) => ({
-  name: a.name,
-  value: a.rating,
-}));
-
-export default function ActivityEffectivenessPage() {
+export default async function ActivityEffectivenessPage() {
+  const analytics = await computeAnalytics();
+  const activityBarData = analytics.activities.map((activity) => ({
+    name: activity.name,
+    value: activity.rating,
+  }));
+  const radarData = [
+    { subject: "Reflection", score: analytics.activities[0].rating * 20 },
+    { subject: "Dialogue", score: analytics.activities[1].rating * 20 },
+    { subject: "Action", score: analytics.activities[2].rating * 20 },
+    { subject: "Engagement", score: analytics.activities[3].rating * 20 },
+    { subject: "Clarity", score: analytics.activities[4].rating * 20 },
+    { subject: "Relevance", score: analytics.activities[5].rating * 20 },
+  ];
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Activity Effectiveness"
+        title="Activity Impact"
         description="Evaluate which workshop activities resonated most with participants and identify opportunities for improvement."
         badge="Activity Rankings"
       />
@@ -44,7 +43,7 @@ export default function ActivityEffectivenessPage() {
           description="Multi-dimensional evaluation of top activities"
           index={0}
         >
-          <RadarChart data={RADAR_DATA} color={BRAND_COLORS.purple} />
+          <RadarChart data={radarData} color={BRAND_COLORS.purple} />
         </ChartCard>
 
         <ChartCard
@@ -67,10 +66,17 @@ export default function ActivityEffectivenessPage() {
             description="Highest rated workshop activities"
           />
           <div className="mt-4 space-y-3">
-            {TOP_ACTIVITIES.map((activity, index) => (
+            {analytics.activities.slice(0, 3).map((activity, index) => (
               <ActivityCard
-                key={activity.id}
-                activity={activity}
+                key={activity.name}
+                activity={{
+                  id: activity.name,
+                  name: activity.name,
+                  rating: activity.rating,
+                  rank: index + 1,
+                  category: activity.category,
+                  description: activity.description,
+                }}
                 variant="top"
                 index={index}
               />
@@ -84,10 +90,17 @@ export default function ActivityEffectivenessPage() {
             description="Activities with lower participant ratings"
           />
           <div className="mt-4 space-y-3">
-            {BOTTOM_ACTIVITIES.map((activity, index) => (
+            {analytics.activities.slice(3).map((activity, index) => (
               <ActivityCard
-                key={activity.id}
-                activity={activity}
+                key={activity.name}
+                activity={{
+                  id: activity.name,
+                  name: activity.name,
+                  rating: activity.rating,
+                  rank: index + 4,
+                  category: activity.category,
+                  description: activity.description,
+                }}
                 variant="bottom"
                 index={index}
               />
@@ -102,19 +115,19 @@ export default function ActivityEffectivenessPage() {
           description="Complete ordered list of all workshop activities"
         />
         <div className="mt-4 space-y-2">
-          {allActivities.map((activity) => (
+          {analytics.activities.map((activity, index) => (
             <div
-              key={activity.id}
+              key={activity.name}
               className="flex items-center gap-4 rounded-xl border border-border bg-surface px-4 py-3"
             >
               <span
                 className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${
-                  activity.rank <= 3
+                  index + 1 <= 3
                     ? "bg-yellow/10 text-yellow"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                {activity.rank}
+                {index + 1}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground">
@@ -125,7 +138,7 @@ export default function ActivityEffectivenessPage() {
                 </p>
               </div>
               <span className="text-sm font-semibold text-foreground">
-                {activity.rating} / 5
+                {activity.rating.toFixed(1)} / 5
               </span>
             </div>
           ))}

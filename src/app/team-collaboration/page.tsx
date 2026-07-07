@@ -7,30 +7,33 @@ import { MetricCard } from "@/components/cards/MetricCard";
 import { WordCloudPlaceholder } from "@/components/charts/WordCloudPlaceholder";
 import { LikertPlaceholder } from "@/components/charts/LikertPlaceholder";
 import { BarChart } from "@/components/charts/BarChart";
-import {
-  TEAM_COLLABORATION_METRICS,
-  LIKERT_DATA,
-  TEAM_CHALLENGES,
-  TEAM_STRENGTHS,
-  WORD_CLOUD_WORDS,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-} from "@/constants/placeholder-data";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
   title: "Team Collaboration",
 };
 
-const teamDynamics = [
-  { name: "Communication", value: 4.2 },
-  { name: "Trust", value: 3.9 },
-  { name: "Inclusion", value: 4.1 },
-  { name: "Conflict Resolution", value: 3.5 },
-  { name: "Shared Goals", value: 4.0 },
-];
-
-export default function TeamCollaborationPage() {
+export default async function TeamCollaborationPage() {
+  const analytics = await computeAnalytics();
+  const teamDynamics = [
+    { name: "Ideas Heard", value: analytics.teamCollaboration.ideasHeard },
+    { name: "Respect", value: analytics.teamCollaboration.respect },
+    {
+      name: "Team Preference",
+      value: analytics.teamCollaboration.teamPreference,
+    },
+  ];
+  const wordCloudWords = Array.from(
+    analytics.teamCollaboration.teamValues
+      .concat(analytics.teamCollaboration.visioningExercise)
+      .reduce((map, word) => {
+        const count = (map.get(word) ?? 0) + 1;
+        map.set(word, count);
+        return map;
+      }, new Map<string, number>()),
+  ).map(([text, count]) => ({ text, size: 18 + count * 4 }));
   return (
     <div className="space-y-8">
       <PageHeader
@@ -47,7 +50,29 @@ export default function TeamCollaborationPage() {
           description="Key indicators of team experience"
         />
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {TEAM_COLLABORATION_METRICS.map((metric, index) => (
+          {[
+            {
+              id: "ideas-heard",
+              label: "Ideas Heard",
+              value: `${analytics.teamCollaboration.ideasHeard.toFixed(1)} / 5`,
+              description: "Participants felt their ideas were valued",
+              color: BRAND_COLORS.blue,
+            },
+            {
+              id: "respect",
+              label: "Respect",
+              value: `${analytics.teamCollaboration.respect.toFixed(1)} / 5`,
+              description: "Respectful interaction and listening",
+              color: BRAND_COLORS.purple,
+            },
+            {
+              id: "team-preference",
+              label: "Team Preference",
+              value: `${analytics.teamCollaboration.teamPreference.toFixed(1)} / 5`,
+              description: "Comfort with collaborative work",
+              color: BRAND_COLORS.green,
+            },
+          ].map((metric, index) => (
             <MetricCard key={metric.id} metric={metric} index={index} />
           ))}
         </div>
@@ -59,7 +84,15 @@ export default function TeamCollaborationPage() {
           description="Likert scale distribution for collaborative work comfort"
           index={0}
         >
-          <LikertPlaceholder data={LIKERT_DATA} />
+          <LikertPlaceholder
+            data={[
+              { name: "Strongly Disagree", value: 0 },
+              { name: "Disagree", value: 0 },
+              { name: "Neutral", value: 2 },
+              { name: "Agree", value: 4 },
+              { name: "Strongly Agree", value: 2 },
+            ]}
+          />
         </ChartCard>
 
         <ChartCard
@@ -80,7 +113,7 @@ export default function TeamCollaborationPage() {
         description="Most frequent words in open-ended team responses"
         index={2}
       >
-        <WordCloudPlaceholder words={WORD_CLOUD_WORDS} />
+        <WordCloudPlaceholder words={wordCloudWords} />
       </ChartCard>
 
       <div className="grid gap-6 lg:grid-cols-2">

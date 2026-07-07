@@ -77,3 +77,104 @@ export interface ABCStage {
   description: string;
   value: number;
 }
+
+export interface SurveyResponse {
+  email: string;
+  pre: {
+    q5: Record<string, number>;
+    q7: number;
+    q8: number;
+    q11: number;
+  };
+  post: {
+    q12: number;
+    q14: Record<string, number>;
+    q15: Record<string, number>;
+    q18: number;
+    q19: number;
+    q21: number;
+    q22: number;
+    ideasHeard: number;
+    respect: number;
+    teamPreference: number;
+    strengths: string[];
+    challenges: string[];
+    teamValues: string[];
+    visioningExercise: string[];
+    clayActivity: number;
+    sixW2h: number;
+    riverOfLife: number;
+    aiActivity: number;
+    gameActivity: number;
+    laptopActivity: number;
+    fieldActivity: number;
+    feelingsChart: number;
+    caseStudy: number;
+    interventionPlanning: number;
+    facilitatorRating: number;
+    safeLearningEnvironment: number;
+    clearInstructions: number;
+    leadership: number;
+    criticalThinking: number;
+    empathy: number;
+    problemSolving: number;
+    communication: number;
+    justiceUnderstanding: number;
+    overallSatisfaction: number;
+    suggestions: string[];
+  };
+}
+
+export interface TopicMetric {
+  topic: string;
+  a: number;
+  b: number;
+  c: number;
+  misconception: number;
+  gain: number;
+  insight: string;
+}
+
+export interface AnalyticsSnapshot {
+  participants: number;
+  completedSurveys: number;
+  workshopImpactScore: number;
+  learningGainIndex: number;
+  misconceptionCorrectionIndex: number;
+  identityGrowth: number;
+  problemSolvingGrowth: number;
+  overallSatisfaction: number;
+  identityTopics: TopicMetric[];
+  creativePedagogy: TopicMetric;
+  problemSolving: TopicMetric;
+  citizenSensitivity: {
+    before: number;
+    after: number;
+    change: number;
+  };
+  misconceptionInsights: InsightData[];
+  learningGainInsights: InsightData[];
+  teamCollaboration: {
+    ideasHeard: number;
+    respect: number;
+    teamPreference: number;
+    strengths: string[];
+    challenges: string[];
+    teamValues: string[];
+    visioningExercise: string[];
+  };
+  activities: Array<{
+    name: string;
+    rating: number;
+    category: string;
+    description: string;
+  }>;
+  skills: Array<{ name: string; value: number }>;
+  facilitator: {
+    averageRating: number;
+    safeEnvironment: number;
+    clearInstructions: number;
+    suggestions: string[];
+  };
+  educatorInsights: string[];
+}

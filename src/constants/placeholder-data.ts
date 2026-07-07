@@ -18,6 +18,132 @@ export const PLACEHOLDER_WORKSHOP = {
   participants: 42,
 };
 
+export const HOME_KPI_METRICS: MetricData[] = [
+  {
+    id: "participants",
+    label: "Participants",
+    value: 42,
+    description: "Across the full workshop cohort",
+    trend: "up",
+    trendLabel: "+8 from last cycle",
+    color: BRAND_COLORS.blue,
+  },
+  {
+    id: "surveys",
+    label: "Completed Surveys",
+    value: "38 / 42",
+    description: "Pre and post workshop responses",
+    trend: "up",
+    trendLabel: "90% completion",
+    color: BRAND_COLORS.green,
+  },
+  {
+    id: "impact-score",
+    label: "Workshop Impact Score",
+    value: "84 / 100",
+    description: "Composite influence across learning and reflection",
+    color: BRAND_COLORS.primary,
+  },
+  {
+    id: "learning-gain",
+    label: "Learning Gain Index",
+    value: "1.6",
+    description: "Average growth across justice learning topics",
+    color: BRAND_COLORS.purple,
+  },
+  {
+    id: "misconception-correction",
+    label: "Misconception Correction",
+    value: "73%",
+    description: "Participants revised earlier assumptions",
+    color: BRAND_COLORS.coral,
+  },
+  {
+    id: "identity-growth",
+    label: "Identity Growth",
+    value: "+1.2",
+    description: "Average movement in identity understanding",
+    color: BRAND_COLORS.yellow,
+  },
+  {
+    id: "problem-solving",
+    label: "Problem Solving Growth",
+    value: "+0.9",
+    description: "Stronger application of justice concepts",
+    color: BRAND_COLORS.lime,
+  },
+  {
+    id: "satisfaction",
+    label: "Overall Satisfaction",
+    value: "4.2 / 5",
+    description: "Average participant experience rating",
+    color: BRAND_COLORS.green,
+  },
+];
+
+export const HOME_RECENT_INSIGHTS: InsightData[] = [
+  {
+    id: "home-i1",
+    title: "Reflection depth increased across sessions",
+    description: "Participants spent more time making sense of structural barriers after the Story Circle exercise.",
+    type: "positive",
+    tag: "Narrative insight",
+  },
+  {
+    id: "home-i2",
+    title: "Identity topics generated the most questions",
+    description: "Caste and religion conversations prompted the strongest curiosity and discussion.",
+    type: "attention",
+    tag: "Facilitation note",
+  },
+  {
+    id: "home-i3",
+    title: "Collaborative activities sustained energy",
+    description: "Small-group work helped maintain engagement during later workshop segments.",
+    type: "neutral",
+    tag: "Engagement pattern",
+  },
+];
+
+export const WORKSHOP_SUMMARY_ITEMS = [
+  {
+    label: "Format",
+    value: "Dialogic, reflective, and experiential",
+  },
+  {
+    label: "Primary outcome",
+    value: "Greater recognition of structural injustice and shared responsibility",
+  },
+  {
+    label: "Support need",
+    value: "More time for identity-based reflection and case study discussion",
+  },
+];
+
+export const QUICK_STATISTICS: MetricData[] = [
+  {
+    id: "impact-areas",
+    label: "High-Impact Themes",
+    value: 4,
+    description: "Main justice themes surfaced in participant responses",
+    color: BRAND_COLORS.primary,
+  },
+  {
+    id: "prompted-action",
+    label: "Action-Oriented Responses",
+    value: "76%",
+    description: "Participants expressed interest in continuing the work",
+    color: BRAND_COLORS.blue,
+  },
+  {
+    id: "follow-up-readiness",
+    label: "Follow-Up Readiness",
+    value: "3.8 / 5",
+    description: "Readiness for a second workshop or community activity",
+    color: BRAND_COLORS.purple,
+  },
+];
+
 export const DASHBOARD_METRICS: MetricData[] = [
   {
     id: "participants",

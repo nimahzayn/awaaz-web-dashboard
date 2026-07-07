@@ -6,38 +6,38 @@ import { ComparisonCard } from "@/components/cards/ComparisonCard";
 import { BarChart } from "@/components/charts/BarChart";
 import { HeatmapPlaceholder } from "@/components/charts/HeatmapPlaceholder";
 import { LineChart } from "@/components/charts/LineChart";
-import {
-  LEARNING_GAIN_TOPICS,
-  HEATMAP_DATA,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-} from "@/constants/placeholder-data";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
-  title: "Learning Gain",
+  title: "Knowledge Growth",
 };
 
-const gainTrend = [
-  { name: "Week 1", gain: 0.4 },
-  { name: "Week 2", gain: 0.8 },
-  { name: "Week 3", gain: 1.2 },
-  { name: "Week 4", gain: 1.5 },
-];
-
-export default function LearningGainPage() {
-  const heatmapColumns = ["week1", "week2", "week3", "week4"];
+export default async function LearningGainPage() {
+  const analytics = await computeAnalytics();
+  const gainTrend = analytics.identityTopics.map((topic) => ({
+    name: topic.topic,
+    gain: topic.gain,
+    value: topic.gain,
+  }));
+  const heatmapColumns = ["a", "b", "c"];
   const columnLabels = {
-    week1: "Pre",
-    week2: "Day 1",
-    week3: "Day 2",
-    week4: "Post",
+    a: "A",
+    b: "B",
+    c: "C",
   };
+  const heatmapData = analytics.identityTopics.map((topic) => ({
+    topic: topic.topic,
+    a: topic.a,
+    b: topic.b,
+    c: topic.c,
+  }));
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Learning Gain"
+        title="Knowledge Growth"
         description="Measure knowledge growth across workshop topics. Compare before and after understanding to identify areas of greatest learning impact."
         badge="Growth Analysis"
       />
@@ -46,23 +46,23 @@ export default function LearningGainPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ComparisonCard
-          label="Structural Injustice"
-          beforeValue={2.2}
-          afterValue={4.0}
+          label={analytics.identityTopics[0].topic}
+          beforeValue={analytics.identityTopics[0].b}
+          afterValue={analytics.identityTopics[0].c}
           description="Largest learning gain observed"
           index={0}
         />
         <ComparisonCard
-          label="Intersectionality"
-          beforeValue={2.5}
-          afterValue={4.0}
+          label={analytics.identityTopics[1].topic}
+          beforeValue={analytics.identityTopics[1].b}
+          afterValue={analytics.identityTopics[1].c}
           description="Strong conceptual growth"
           index={1}
         />
         <ComparisonCard
-          label="Privilege Awareness"
-          beforeValue={2.6}
-          afterValue={4.0}
+          label={analytics.identityTopics[2].topic}
+          beforeValue={analytics.identityTopics[2].b}
+          afterValue={analytics.identityTopics[2].c}
           description="Notable shift in perspective"
           index={2}
         />
@@ -82,8 +82,11 @@ export default function LearningGainPage() {
           index={0}
         >
           <BarChart
-            data={LEARNING_GAIN_TOPICS}
-            dataKey="gain"
+            data={analytics.identityTopics.map((topic) => ({
+              name: topic.topic,
+              value: topic.gain,
+            }))}
+            dataKey="value"
             color={BRAND_COLORS.purple}
             height={300}
           />
@@ -96,7 +99,9 @@ export default function LearningGainPage() {
         >
           <LineChart
             data={gainTrend}
-            lines={[{ key: "gain", label: "Avg. Gain", color: BRAND_COLORS.green }]}
+            lines={[
+              { key: "gain", label: "Avg. Gain", color: BRAND_COLORS.green },
+            ]}
             height={300}
           />
         </ChartCard>
@@ -108,7 +113,7 @@ export default function LearningGainPage() {
         index={2}
       >
         <HeatmapPlaceholder
-          data={HEATMAP_DATA}
+          data={heatmapData}
           columns={heatmapColumns}
           columnLabels={columnLabels}
         />

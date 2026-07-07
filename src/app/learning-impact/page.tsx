@@ -10,49 +10,93 @@ import {
 } from "@/components/charts/GroupedBarChart";
 import { SlopeChart } from "@/components/charts/SlopeChart";
 import { LineChart } from "@/components/charts/LineChart";
-import {
-  ABC_STAGES,
-  LEARNING_IMPACT_GROUPED,
-  SLOPE_CHART_DATA,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-} from "@/constants/placeholder-data";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
-  title: "Learning Impact",
+  title: "Learning Journey",
 };
 
-export default function LearningImpactPage() {
-  const abcMetrics = ABC_STAGES.map((stage) => ({
-    id: stage.stage,
-    label: `${stage.stage} — ${stage.label}`,
-    value: stage.value,
-    description: stage.description,
-    color:
-      stage.stage === "A"
-        ? BRAND_COLORS.blue
-        : stage.stage === "B"
-          ? BRAND_COLORS.coral
-          : BRAND_COLORS.green,
+export default async function LearningImpactPage() {
+  const analytics = await computeAnalytics();
+  const abcMetrics = [
+    {
+      id: "A",
+      label: "A — Original Before",
+      value: analytics.identityTopics[0].a,
+      description: "Original pre-workshop understanding",
+      color: BRAND_COLORS.blue,
+    },
+    {
+      id: "B",
+      label: "B — Retrospective Before",
+      value: analytics.identityTopics[0].b,
+      description: "Retrospective estimate of pre-workshop understanding",
+      color: BRAND_COLORS.coral,
+    },
+    {
+      id: "C",
+      label: "C — After Workshop",
+      value: analytics.identityTopics[0].c,
+      description: "Post-workshop understanding",
+      color: BRAND_COLORS.green,
+    },
+  ];
+
+  const progressionData = [
+    { name: "A", value: analytics.identityTopics[0].a },
+    { name: "B", value: analytics.identityTopics[0].b },
+    { name: "C", value: analytics.identityTopics[0].c },
+  ];
+
+  const topicComparison = analytics.identityTopics.map((topic) => ({
+    name: topic.topic,
+    A: topic.a,
+    B: topic.b,
+    C: topic.c,
+    value: topic.c,
   }));
 
-  const progressionData = ABC_STAGES.map((s) => ({
-    name: s.stage,
-    score: s.value,
+  const trajectoryData = analytics.identityTopics.map((topic) => ({
+    participant: topic.topic,
+    before: topic.a,
+    after: topic.c,
   }));
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Learning Impact"
+        title="Learning Journey"
         description="Track how participant understanding evolves through the A → B → C framework — from original pre-workshop beliefs to post-workshop comprehension."
         badge="A → B → C Framework"
       />
 
       <FilterBar workshops={FILTER_WORKSHOPS} cohorts={FILTER_COHORTS} />
 
-      <ABCInfoCard stages={ABC_STAGES} />
+      <ABCInfoCard
+        stages={[
+          {
+            stage: "A",
+            label: "Original Before",
+            description: "Participant's original pre-workshop rating.",
+            value: analytics.identityTopics[0].a,
+          },
+          {
+            stage: "B",
+            label: "Retrospective Before",
+            description:
+              "Participant's retrospective rating of what they now believe their pre-workshop understanding was.",
+            value: analytics.identityTopics[0].b,
+          },
+          {
+            stage: "C",
+            label: "After Workshop",
+            description: "Participant's post-workshop rating.",
+            value: analytics.identityTopics[0].c,
+          },
+        ]}
+      />
 
       <section aria-labelledby="abc-scores">
         <SectionHeader
@@ -74,7 +118,7 @@ export default function LearningImpactPage() {
           className="lg:col-span-2"
         >
           <GroupedBarChart
-            data={LEARNING_IMPACT_GROUPED}
+            data={topicComparison}
             groups={ABC_GROUP_CONFIG}
             height={340}
           />
@@ -87,7 +131,13 @@ export default function LearningImpactPage() {
         >
           <LineChart
             data={progressionData}
-            lines={[{ key: "score", label: "Understanding Score", color: BRAND_COLORS.primary }]}
+            lines={[
+              {
+                key: "score",
+                label: "Understanding Score",
+                color: BRAND_COLORS.primary,
+              },
+            ]}
             xAxisKey="name"
             height={280}
           />
@@ -98,7 +148,7 @@ export default function LearningImpactPage() {
           description="Before-to-after understanding shifts per participant"
           index={2}
         >
-          <SlopeChart data={SLOPE_CHART_DATA} height={280} />
+          <SlopeChart data={trajectoryData} height={280} />
         </ChartCard>
       </div>
     </div>

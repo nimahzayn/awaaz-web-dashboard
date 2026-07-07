@@ -5,21 +5,16 @@ import { ChartCard } from "@/components/cards/ChartCard";
 import { ThemeCard } from "@/components/cards/ThemeCard";
 import { InsightCard } from "@/components/cards/InsightCard";
 import { HorizontalBarChart } from "@/components/charts/HorizontalBarChart";
-import {
-  SKILLS_DEVELOPED,
-  JUSTICE_THEMES,
-  OPEN_ENDED_RESPONSES,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-  DASHBOARD_INSIGHTS,
-} from "@/constants/placeholder-data";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
   title: "Skills & Justice Learning",
 };
 
-export default function SkillsJusticeLearningPage() {
+export default async function SkillsJusticeLearningPage() {
+  const analytics = await computeAnalytics();
   return (
     <div className="space-y-8">
       <PageHeader
@@ -36,7 +31,10 @@ export default function SkillsJusticeLearningPage() {
         index={0}
       >
         <HorizontalBarChart
-          data={SKILLS_DEVELOPED}
+          data={analytics.skills.map((skill) => ({
+            name: skill.name,
+            value: skill.value,
+          }))}
           color={BRAND_COLORS.green}
           height={300}
         />
@@ -48,7 +46,39 @@ export default function SkillsJusticeLearningPage() {
           description="Recurring themes in participant reflections"
         />
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {JUSTICE_THEMES.map((theme, index) => (
+          {[
+            {
+              id: "structural",
+              title: "Structural Inequality",
+              count: 24,
+              description:
+                "Recognizing systemic barriers beyond individual actions",
+              color: BRAND_COLORS.primary,
+            },
+            {
+              id: "intersectionality",
+              title: "Intersectionality",
+              count: 19,
+              description:
+                "Understanding overlapping identity-based discrimination",
+              color: BRAND_COLORS.purple,
+            },
+            {
+              id: "solidarity",
+              title: "Community Solidarity",
+              count: 16,
+              description: "Building collective action for justice",
+              color: BRAND_COLORS.blue,
+            },
+            {
+              id: "policy",
+              title: "Policy & Governance",
+              count: 12,
+              description:
+                "Connecting lived experience to institutional change",
+              color: BRAND_COLORS.coral,
+            },
+          ].map((theme, index) => (
             <ThemeCard key={theme.id} theme={theme} index={index} />
           ))}
         </div>
@@ -60,7 +90,7 @@ export default function SkillsJusticeLearningPage() {
           description="Selected participant reflections on justice learning"
         />
         <div className="mt-4 space-y-3">
-          {OPEN_ENDED_RESPONSES.map((response, index) => (
+          {analytics.educatorInsights.map((response, index) => (
             <blockquote
               key={index}
               className="rounded-xl border border-border bg-surface px-5 py-4 text-sm text-muted-foreground leading-relaxed italic"
@@ -77,7 +107,7 @@ export default function SkillsJusticeLearningPage() {
           description="Patterns emerging from skills and theme analysis"
         />
         <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {DASHBOARD_INSIGHTS.map((insight, index) => (
+          {analytics.learningGainInsights.map((insight, index) => (
             <InsightCard key={insight.id} insight={insight} index={index} />
           ))}
         </div>

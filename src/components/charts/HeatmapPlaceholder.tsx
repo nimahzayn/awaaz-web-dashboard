@@ -32,14 +32,18 @@ export function HeatmapPlaceholder({
   className,
 }: HeatmapPlaceholderProps) {
   return (
-    <div className={cn("space-y-3", className)} role="img" aria-label="Learning gain heatmap placeholder">
+    <div
+      className={cn("space-y-3", className)}
+      role="img"
+      aria-label="Learning gain heatmap placeholder"
+    >
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Grid3x3 className="h-4 w-4" aria-hidden="true" />
         <span>Understanding level by topic and time period</span>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[400px] border-collapse">
+        <table className="w-full min-w-100 border-collapse">
           <thead>
             <tr>
               <th className="p-2 text-left text-xs font-medium text-muted-foreground">

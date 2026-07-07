@@ -2,19 +2,20 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { FilterBar } from "@/components/shared/FilterBar";
 import { ChartCard } from "@/components/cards/ChartCard";
 import { ProgressCard } from "@/components/cards/ProgressCard";
-import { GroupedBarChart, ABC_GROUP_CONFIG } from "@/components/charts/GroupedBarChart";
 import {
-  IDENTITY_DIMENSIONS,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-} from "@/constants/placeholder-data";
+  GroupedBarChart,
+  ABC_GROUP_CONFIG,
+} from "@/components/charts/GroupedBarChart";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
   title: "Identity Understanding",
 };
 
-export default function IdentityUnderstandingPage() {
+export default async function IdentityUnderstandingPage() {
+  const analytics = await computeAnalytics();
   return (
     <div className="space-y-8">
       <PageHeader
@@ -26,13 +27,13 @@ export default function IdentityUnderstandingPage() {
       <FilterBar workshops={FILTER_WORKSHOPS} cohorts={FILTER_COHORTS} />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {IDENTITY_DIMENSIONS.map((dimension, index) => {
+        {analytics.identityTopics.map((dimension, index) => {
           const chartData = [
             {
-              name: dimension.dimension,
-              A: dimension.before,
-              B: dimension.reflection,
-              C: dimension.after,
+              name: dimension.topic,
+              A: dimension.a,
+              B: dimension.b,
+              C: dimension.c,
             },
           ];
 
@@ -45,8 +46,8 @@ export default function IdentityUnderstandingPage() {
           return (
             <div key={dimension.id} className="space-y-4">
               <ChartCard
-                title={dimension.dimension}
-                description={dimension.description}
+                title={dimension.topic}
+                description={`${dimension.topic} understanding across A, B, and C stages`}
                 index={index}
               >
                 <GroupedBarChart
@@ -59,19 +60,19 @@ export default function IdentityUnderstandingPage() {
               <div className="space-y-2">
                 <ProgressCard
                   label="Before"
-                  value={dimension.before}
+                  value={dimension.a}
                   color={BRAND_COLORS.blue}
                   index={0}
                 />
                 <ProgressCard
                   label="Reflection"
-                  value={dimension.reflection}
+                  value={dimension.b}
                   color={BRAND_COLORS.coral}
                   index={1}
                 />
                 <ProgressCard
                   label="After"
-                  value={dimension.after}
+                  value={dimension.c}
                   color={colors[index]}
                   index={2}
                 />

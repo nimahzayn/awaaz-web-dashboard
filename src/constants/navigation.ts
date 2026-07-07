@@ -1,15 +1,15 @@
 import {
   LayoutDashboard,
-  TrendingUp,
-  AlertCircle,
-  BarChart3,
-  Users,
+  Compass,
+  Eye,
+  GraduationCap,
   Fingerprint,
-  Trophy,
+  Users,
+  Sparkles,
   BookOpen,
   Star,
-  Heart,
   FileText,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -22,27 +22,27 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   {
-    title: "Dashboard",
-    href: "/",
+    title: "Workshop Overview",
+    href: "/workshop-overview",
     icon: LayoutDashboard,
     description: "Executive overview of workshop impact",
   },
   {
-    title: "Learning Impact",
-    href: "/learning-impact",
-    icon: TrendingUp,
+    title: "Learning Journey",
+    href: "/learning-journey",
+    icon: Compass,
     description: "A → B → C understanding progression",
   },
   {
-    title: "Misconception Analysis",
-    href: "/misconception-analysis",
-    icon: AlertCircle,
+    title: "Perception Shift",
+    href: "/perception-shift",
+    icon: Eye,
     description: "Identify and track misconception correction",
   },
   {
-    title: "Learning Gain",
-    href: "/learning-gain",
-    icon: BarChart3,
+    title: "Knowledge Growth",
+    href: "/knowledge-growth",
+    icon: GraduationCap,
     description: "Measure knowledge growth across topics",
   },
   {
@@ -58,9 +58,9 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Team dynamics and collaboration insights",
   },
   {
-    title: "Activity Effectiveness",
-    href: "/activity-effectiveness",
-    icon: Trophy,
+    title: "Activity Impact",
+    href: "/activity-impact",
+    icon: Sparkles,
     description: "Rank and evaluate workshop activities",
   },
   {
@@ -70,21 +70,21 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Skills developed and justice themes",
   },
   {
-    title: "Facilitator Evaluation",
-    href: "/facilitator-evaluation",
+    title: "Facilitation Insights",
+    href: "/facilitation-insights",
     icon: Star,
     description: "Facilitator ratings and feedback",
   },
   {
-    title: "Workshop Experience",
-    href: "/workshop-experience",
-    icon: Heart,
-    description: "Overall satisfaction and sentiment",
-  },
-  {
-    title: "Reports",
-    href: "/reports",
+    title: "Impact Reports",
+    href: "/impact-reports",
     icon: FileText,
     description: "Export PDF and CSV reports",
+  },
+  {
+    title: "Settings",
+    href: "/settings",
+    icon: Settings,
+    description: "Platform preferences and research context",
   },
 ];

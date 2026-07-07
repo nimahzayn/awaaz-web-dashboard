@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Download, FileText, FileSpreadsheet, Lock } from "lucide-react";
 
 export const metadata = {
-  title: "Reports",
+  title: "Impact Reports",
 };
 
 export default function ReportsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Reports"
+        title="Impact Reports"
         description="Generate and download workshop impact reports. PDF summaries and CSV data exports will be available once analytics are connected."
         badge="Export Center"
       />

@@ -6,32 +6,36 @@ import { InsightCard } from "@/components/cards/InsightCard";
 import { AnalysisCard } from "@/components/cards/AnalysisCard";
 import { HorizontalBarChart } from "@/components/charts/HorizontalBarChart";
 import { DonutChart } from "@/components/charts/DonutChart";
-import { GroupedBarChart, ABC_GROUP_CONFIG } from "@/components/charts/GroupedBarChart";
 import {
-  MISCONCEPTION_INSIGHTS,
-  MISCONCEPTION_RANKINGS,
-  LEARNING_IMPACT_GROUPED,
-  FILTER_WORKSHOPS,
-  FILTER_COHORTS,
-} from "@/constants/placeholder-data";
+  GroupedBarChart,
+  ABC_GROUP_CONFIG,
+} from "@/components/charts/GroupedBarChart";
+import { FILTER_WORKSHOPS, FILTER_COHORTS } from "@/constants/placeholder-data";
 import { BRAND_COLORS } from "@/constants/colors";
+import { computeAnalytics } from "@/services/analytics";
 
 export const metadata = {
-  title: "Misconception Analysis",
+  title: "Perception Shift",
 };
 
-const misconceptionShift = [
-  { name: "Caste", before: 2.1, after: 3.8 },
-  { name: "Gender", before: 2.4, after: 3.6 },
-  { name: "Religion", before: 2.0, after: 3.5 },
-  { name: "Class", before: 2.3, after: 3.4 },
-];
-
-export default function MisconceptionAnalysisPage() {
+export default async function MisconceptionAnalysisPage() {
+  const analytics = await computeAnalytics();
+  const misconceptionShift = analytics.identityTopics.map((topic) => ({
+    name: topic.topic,
+    before: topic.a,
+    after: topic.c,
+    value: topic.c,
+  }));
+  const misconceptionRankings = analytics.identityTopics
+    .map((topic) => ({
+      name: topic.topic,
+      value: Number(topic.misconception.toFixed(1)),
+    }))
+    .sort((left, right) => right.value - left.value);
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Misconception Analysis"
+        title="Perception Shift"
         description="Identify common misconceptions before the workshop and track how participant understanding shifts through the A → B → C retrospective process."
         badge="Correction Tracking"
       />
@@ -45,7 +49,9 @@ export default function MisconceptionAnalysisPage() {
           index={0}
           className="text-center"
         >
-          <p className="text-4xl font-semibold text-coral">12</p>
+          <p className="text-4xl font-semibold text-coral">
+            {analytics.identityTopics.length}
+          </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Across 5 topic areas
           </p>
@@ -56,18 +62,26 @@ export default function MisconceptionAnalysisPage() {
           index={1}
           className="text-center"
         >
-          <p className="text-4xl font-semibold text-green">—</p>
+          <p className="text-4xl font-semibold text-green">
+            {analytics.misconceptionCorrectionIndex.toFixed(1)}
+          </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Pending analytics implementation
           </p>
         </AnalysisCard>
         <AnalysisCard
-          title="B &lt; A Instances"
+          title="B < A Instances"
           description="Retrospective scores lower than original"
           index={2}
           className="text-center"
         >
-          <p className="text-4xl font-semibold text-primary">—</p>
+          <p className="text-4xl font-semibold text-primary">
+            {
+              analytics.identityTopics.filter(
+                (topic) => topic.misconception > 0,
+              ).length
+            }
+          </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Indicates revised self-assessment
           </p>
@@ -81,7 +95,7 @@ export default function MisconceptionAnalysisPage() {
           index={0}
         >
           <HorizontalBarChart
-            data={MISCONCEPTION_RANKINGS}
+            data={misconceptionRankings}
             color={BRAND_COLORS.coral}
             height={280}
           />
@@ -92,7 +106,7 @@ export default function MisconceptionAnalysisPage() {
           description="Proportion of misconceptions by category"
           index={1}
         >
-          <DonutChart data={MISCONCEPTION_RANKINGS} height={280} />
+          <DonutChart data={misconceptionRankings} height={280} />
         </ChartCard>
       </div>
 
@@ -117,7 +131,7 @@ export default function MisconceptionAnalysisPage() {
           description="Key patterns in participant understanding shifts"
         />
         <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {MISCONCEPTION_INSIGHTS.map((insight, index) => (
+          {analytics.misconceptionInsights.map((insight, index) => (
             <InsightCard key={insight.id} insight={insight} index={index} />
           ))}
         </div>
@@ -129,7 +143,7 @@ export default function MisconceptionAnalysisPage() {
           description="Topics ranked by misconception prevalence"
         />
         <div className="mt-4 space-y-2">
-          {MISCONCEPTION_RANKINGS.map((item, index) => (
+          {misconceptionRankings.map((item, index) => (
             <div
               key={item.name as string}
               className="flex items-center gap-4 rounded-xl border border-border bg-surface px-4 py-3"

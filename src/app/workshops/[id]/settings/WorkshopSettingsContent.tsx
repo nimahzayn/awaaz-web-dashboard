@@ -3,11 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition, useRef } from "react";
 import { uploadPreWorkshop, uploadPostWorkshop, generateAnalysis } from "@/services/workshop-actions";
-<<<<<<< HEAD
 import { Upload, Loader2, Sparkles, CheckCircle2, Pencil } from "lucide-react";
-=======
-import { Upload, FileCheck, Loader2, Sparkles, CheckCircle2, Pencil } from "lucide-react";
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
 import type { Workshop } from "@/types";
 import Link from "next/link";
 

@@ -22,11 +22,7 @@ export function LearningJourneySection({ analytics }: { analytics: AnalyticsSnap
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Learning Journey</p>
         <h2 className="text-2xl font-semibold text-foreground">The A → B → C Framework</h2>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-<<<<<<< HEAD
           One of Awaaz Labs&apos; defining features: measuring how participants&apos; understanding evolves from their original view, through retrospective reflection, to post-workshop knowledge.
-=======
-          One of Awaaz Labs' defining features: measuring how participants&apos; understanding evolves from their original view, through retrospective reflection, to post-workshop knowledge.
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
         </p>
       </div>
 

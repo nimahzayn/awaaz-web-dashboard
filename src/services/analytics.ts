@@ -13,15 +13,9 @@ function round(value: number): number {
 }
 
 function summarizeTopic(topic: (typeof TOPICS)[number], responses: SurveyResponse[]): TopicMetric {
-<<<<<<< HEAD
   const aValues = responses.map((r) => r.pre.q5[topic] as number);
   const bValues = responses.map((r) => r.post.q14[topic] as number);
   const cValues = responses.map((r) => r.post.q15[topic] as number);
-=======
-  const aValues = responses.map((r) => r.pre.q5[topic]);
-  const bValues = responses.map((r) => r.post.q14[topic]);
-  const cValues = responses.map((r) => r.post.q15[topic]);
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
   const a = average(aValues);
   const b = average(bValues);
   const c = average(cValues);
@@ -42,11 +36,7 @@ function summarizeTopic(topic: (typeof TOPICS)[number], responses: SurveyRespons
 }
 
 export async function computeAnalytics(workshopId: string): Promise<AnalyticsSnapshot> {
-<<<<<<< HEAD
   const responses: SurveyResponse[] = (await readWorkshopFile(workshopId, "survey_responses.json")) || [];
-=======
-  const responses: SurveyResponse[] = await readWorkshopFile(workshopId, "survey_responses.json") || [];
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
 
   const identityTopics = TOPICS.map((topic) => summarizeTopic(topic, responses));
 
@@ -128,10 +118,7 @@ export async function computeAnalytics(workshopId: string): Promise<AnalyticsSna
     completedSurveys: responses.length,
     workshopImpactScore: round(average(responses.map((r) => r.post.overallSatisfaction)) * 20),
     learningGainIndex: round(average(identityTopics.map((t) => t.gain))),
-<<<<<<< HEAD
     misconceptionCorrectionIndex: round(average(identityTopics.map((t) => t.misconception))),
-=======
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
     identityGrowth: round(average(identityTopics.map((t) => t.c - t.b))),
     problemSolvingGrowth: round(problemSolving.gain),
     overallSatisfaction: round(average(responses.map((r) => r.post.overallSatisfaction))),
@@ -139,23 +126,15 @@ export async function computeAnalytics(workshopId: string): Promise<AnalyticsSna
     creativePedagogy,
     problemSolving,
     citizenSensitivity,
-<<<<<<< HEAD
     misconceptionInsights: identityTopics.map((t, i) => ({
       id: `misconception-${i}`,
-=======
-    misconceptionInsights: identityTopics.map((t) => ({
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
       title: `${t.topic} perception shift`,
       description: t.misconception > 0
         ? `Participants overestimated their prior understanding by ${t.misconception.toFixed(1)} points.`
         : `Participants' retrospective view aligned closely with their understanding of ${t.topic}.`,
     })),
-<<<<<<< HEAD
     learningGainInsights: identityTopics.map((t, i) => ({
       id: `gain-${i}`,
-=======
-    learningGainInsights: identityTopics.map((t) => ({
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
       title: `${t.topic} learning gain`,
       description: `${t.gain.toFixed(1)} points of measured learning gain after the workshop.`,
     })),

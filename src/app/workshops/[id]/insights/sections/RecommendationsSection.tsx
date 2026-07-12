@@ -1,7 +1,6 @@
 "use client";
 
 import type { AnalyticsSnapshot } from "@/types";
-<<<<<<< HEAD
 
 export function RecommendationsSection({ analytics }: { analytics: AnalyticsSnapshot }) {
   const sorted = [...analytics.identityTopics].sort((a, b) => a.gain - b.gain);
@@ -9,15 +8,6 @@ export function RecommendationsSection({ analytics }: { analytics: AnalyticsSnap
     {
       title: "Deepen Identity Learning",
       detail: `Consider adding more activities focused on ${sorted[0]?.topic || "key topics"} where learning gains were smaller.`,
-=======
-import { Sparkles, ArrowRight } from "lucide-react";
-
-export function RecommendationsSection({ analytics }: { analytics: AnalyticsSnapshot }) {
-  const recommendations = [
-    {
-      title: "Deepen Identity Learning",
-      detail: `Consider adding more activities focused on ${analytics.identityTopics.sort((a, b) => a.gain - b.gain)[0]?.topic || "key topics"} where learning gains were smaller.`,
->>>>>>> eca607128818d652d280ea17157714cd56e4476f
       type: "growth" as const,
     },
     {

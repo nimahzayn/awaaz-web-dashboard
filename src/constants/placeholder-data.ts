@@ -11,11 +11,11 @@ import type {
 } from "@/types";
 
 export const PLACEHOLDER_WORKSHOP = {
-  name: "Justice Innovation Workshop",
-  cohort: "Leadership Labs Cohort 2025",
-  date: "March 2025",
-  location: "Mumbai",
-  participants: 42,
+  name: "",
+  cohort: "",
+  date: "",
+  location: "",
+  participants: 0,
 };
 
 export const HOME_KPI_METRICS: MetricData[] = [

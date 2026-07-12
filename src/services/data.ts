@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import type { SurveyResponse } from "@/types";
 
 type SheetRow = Record<string, string>;
@@ -109,7 +111,25 @@ function toNumber(value: number | string | undefined): number {
     }
 
     const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : 0;
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+
+    const lower = trimmed.toLowerCase();
+    
+    // Likert Scale (1-5)
+    if (lower.includes("strongly agree")) return 5;
+    if (lower.includes("strongly disagree")) return 1;
+    if (lower.includes("disagree")) return 2;
+    if (lower.includes("agree")) return 4;
+    if (lower.includes("neutral") || lower.includes("undecided") || lower.includes("maybe")) return 3;
+    
+    // Understanding level options
+    if (lower.includes("deep and nuanced")) return 5;
+    if (lower.includes("good understanding") || lower.includes("good")) return 4;
+    if (lower.includes("basic understanding") || lower.includes("basic")) return 3;
+    if (lower.includes("little to no") || lower.includes("little")) return 2;
+    if (lower.includes("no understanding") || lower.includes("none") || lower.includes("never")) return 1;
   }
 
   return 0;
@@ -741,10 +761,26 @@ function buildMergedResponses(): SurveyResponse[] {
 export const MOCK_SURVEY_RESPONSES = buildMergedResponses();
 
 export async function getSurveyResponses(): Promise<SurveyResponse[]> {
+  try {
+    const dataDir = path.join(process.cwd(), "src/data");
+    const surveyResponsesPath = path.join(dataDir, "survey_responses.json");
+    if (fs.existsSync(surveyResponsesPath)) {
+      const content = fs.readFileSync(surveyResponsesPath, "utf-8");
+      if (content.trim()) {
+        const customData = JSON.parse(content);
+        if (Array.isArray(customData) && customData.length > 0) {
+          return customData;
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error reading custom survey responses from file:", error);
+  }
+
   const fromSheet = await loadSurveyResponsesFromSheet();
   if (fromSheet.length) {
     return fromSheet;
   }
 
-  return MOCK_SURVEY_RESPONSES;
+  return [];
 }

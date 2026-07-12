@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: {
     default: "Workshop Impact Analytics | Awaaz Leadership Labs",
@@ -18,6 +20,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-full">
         <AppShell>{children}</AppShell>
       </body>

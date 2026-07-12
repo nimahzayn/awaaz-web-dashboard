@@ -17,6 +17,7 @@
   --lime: #b1e043;
   --dark: #231f20;
   --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
+  --font-display: "Abril Fatface", serif;
   --font-mono: "SFMono-Regular", "SF Mono", Consolas, monospace;
 }
 
@@ -37,6 +38,7 @@
   --color-lime: var(--lime);
   --color-dark: var(--dark);
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
   --font-mono: var(--font-mono);
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;

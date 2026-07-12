@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft } from "lucide-react";
@@ -42,31 +43,28 @@ export function Sidebar() {
         )}
         aria-label="Main navigation"
       >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-5">
           <Link
             href="/"
             className={cn(
-              "flex items-center gap-2.5 transition-opacity",
+              "flex w-full items-center justify-center transition-opacity",
               !isOpen && "lg:opacity-0 lg:pointer-events-none"
             )}
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-              A
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground leading-tight">
-                Awaaz Labs
-              </p>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                Impact Analytics
-              </p>
-            </div>
+            <Image
+              src="/awaaz-logo.png"
+              alt="Awaaz Leadership Labs"
+              width={160}
+              height={67}
+              className="h-auto w-[140px] object-contain lg:w-[160px]"
+              priority
+            />
           </Link>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggle}
-            className="h-8 w-8 shrink-0"
+            className="absolute right-2 top-4 h-8 w-8 shrink-0"
             aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             <X className="h-4 w-4 lg:hidden" />
@@ -135,7 +133,7 @@ export function Sidebar() {
             Justice Innovation Workshop Analytics
           </p>
           <p className="mt-1 text-[10px] text-muted-foreground/70">
-            Placeholder data — analytics pending
+            Awaaz Leadership Labs
           </p>
         </div>
       </motion.aside>

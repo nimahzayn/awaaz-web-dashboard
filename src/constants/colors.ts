@@ -1,5 +1,5 @@
 export const BRAND_COLORS = {
-  primary: "#E7436D",
+  primary: "#E8126E",
   dark: "#231F20",
   purple: "#B07AE6",
   blue: "#339CFF",

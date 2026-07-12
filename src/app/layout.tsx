@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
-import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
-    default: "Workshop Impact Analytics | Awaaz Leadership Labs",
-    template: "%s | Awaaz Impact Analytics",
+    default: "Workshop Analysis | Awaaz Leadership Labs",
+    template: "%s | Awaaz Leadership Labs",
   },
   description:
-    "Evaluate the impact of Justice Innovation workshops using participant responses. Built for Awaaz Leadership Labs educators.",
+    "Transform workshop responses into meaningful insights. AI-powered impact reports for Awaaz Leadership Labs.",
 };
 
 export default function RootLayout({
@@ -24,12 +23,19 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <link
+          href="https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchq-dmjQ.woff2"
+          rel="stylesheet"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
       </head>
-      <body className="min-h-full">
-        <AppShell>{children}</AppShell>
+      <body className="min-h-full bg-background text-foreground">
+        {children}
       </body>
     </html>
   );

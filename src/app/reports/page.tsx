@@ -1,110 +1,46 @@
-import { PageHeader } from "@/components/shared/PageHeader";
-import { SectionHeader } from "@/components/shared/SectionHeader";
-import { REPORTS } from "@/constants/placeholder-data";
-import { Button } from "@/components/ui/button";
-import { Download, FileText, FileSpreadsheet, Lock } from "lucide-react";
+import { AppShell } from "@/components/layout/AppShell";
+import { getWorkshops } from "@/services/workshops";
+import Link from "next/link";
+import { FileText } from "lucide-react";
 
-export const metadata = {
-  title: "Impact Reports",
-};
+export const metadata = { title: "Reports" };
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const workshops = await getWorkshops();
+  const analyzed = workshops.filter((w) => w.status === "analyzed");
+
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Impact Reports"
-        description="Generate and download workshop impact reports. PDF summaries and CSV data exports will be available once analytics are connected."
-        badge="Export Center"
-      />
-
-      <section aria-labelledby="available-reports">
-        <SectionHeader
-          title="Available Reports"
-          description="Report templates ready for data integration"
-        />
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {REPORTS.map((report) => {
-            const Icon = report.format === "PDF" ? FileText : FileSpreadsheet;
-
-            return (
-              <article
-                key={report.id}
-                className="flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm"
-              >
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-                      report.format === "PDF"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-green/10 text-green"
-                    }`}
-                  >
-                    <Icon className="h-6 w-6" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-foreground">
-                        {report.title}
-                      </h3>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                        {report.format}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                      {report.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Includes:
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {report.sections.map((section) => (
-                      <span
-                        key={section}
-                        className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
-                      >
-                        {section}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-5 flex items-center gap-3">
-                  <Button disabled className="gap-2 opacity-60">
-                    <Download className="h-4 w-4" />
-                    Download {report.format}
-                  </Button>
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Lock className="h-3 w-3" aria-hidden="true" />
-                    Available after data connection
-                  </span>
-                </div>
-              </article>
-            );
-          })}
+    <AppShell>
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <h1 className="font-[family-name:var(--font-display)] text-3xl text-foreground">Reports</h1>
+          <p className="text-sm text-muted-foreground">Access impact reports for your analyzed workshops.</p>
         </div>
-      </section>
 
-      <section
-        aria-labelledby="export-info"
-        className="rounded-2xl border border-dashed border-border bg-muted/30 p-6 text-center"
-      >
-        <FileText
-          className="mx-auto h-10 w-10 text-muted-foreground/50"
-          aria-hidden="true"
-        />
-        <h3 className="mt-3 text-base font-semibold text-foreground">
-          Reports Coming Soon
-        </h3>
-        <p className="mt-2 mx-auto max-w-md text-sm text-muted-foreground leading-relaxed">
-          Once Google Forms data is connected and analytics calculations are
-          implemented, you&apos;ll be able to generate comprehensive PDF reports
-          and export raw CSV data for further analysis.
-        </p>
-      </section>
-    </div>
+        {analyzed.length === 0 ? (
+          <div className="rounded-2xl border border-border/60 bg-surface px-12 py-20 text-center">
+            <FileText className="mx-auto mb-4 h-8 w-8 text-muted-foreground/30" />
+            <p className="text-sm font-medium text-foreground">No reports available</p>
+            <p className="mt-1 text-xs text-muted-foreground">Analyze a workshop to generate its impact report.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {analyzed.map((ws) => (
+              <Link
+                key={ws.id}
+                href={`/workshops/${ws.id}/impact-report`}
+                className="group flex items-center justify-between rounded-2xl border border-border/60 bg-surface px-6 py-5 transition-all hover:border-primary/20 hover:shadow-md"
+              >
+                <div>
+                  <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">{ws.name}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">{ws.matchedCount} participants · {ws.location} · {ws.date}</p>
+                </div>
+                <span className="text-sm font-medium text-primary">View Report →</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </AppShell>
   );
 }

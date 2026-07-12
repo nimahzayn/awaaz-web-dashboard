@@ -1,24 +1,35 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Mortina One Regular";
+  src: url("https://framerusercontent.com/assets/AuWJgsA39OfsDBuzLa7IJ2JzDs.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
 :root {
-  --background: #fafaf8;
-  --foreground: #231f20;
+  --background: #F8F7F5;
+  --foreground: #1a1a1a;
   --surface: #ffffff;
-  --muted: #f4f4f2;
+  --muted: #f2f1ef;
   --muted-foreground: #6b6b68;
   --border: #e8e8e4;
-  --primary: #e7436d;
+  --primary: #E8126E;
   --primary-foreground: #ffffff;
+  --teal: #2a9d8f;
+  --teal-light: #e8f5f3;
   --purple: #b07ae6;
   --blue: #339cff;
   --coral: #f08367;
   --yellow: #ffba4c;
   --green: #44e6ad;
-  --lime: #b1e043;
-  --dark: #231f20;
-  --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
-  --font-display: "Abril Fatface", serif;
-  --font-mono: "SFMono-Regular", "SF Mono", Consolas, monospace;
+  --dark: #1a1a1a;
+  --card: #ffffff;
+  --card-hover: #fafafa;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Mortina One Regular", "Abril Fatface", serif;
+  --font-mono: "SF Mono", "Fira Code", monospace;
 }
 
 @theme inline {
@@ -30,13 +41,16 @@
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-teal: var(--teal);
+  --color-teal-light: var(--teal-light);
   --color-purple: var(--purple);
   --color-blue: var(--blue);
   --color-coral: var(--coral);
   --color-yellow: var(--yellow);
   --color-green: var(--green);
-  --color-lime: var(--lime);
   --color-dark: var(--dark);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
@@ -53,19 +67,17 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Recharts tooltip styling */
-.recharts-default-tooltip {
-  border-radius: 0.75rem !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 4px 12px rgba(35, 31, 32, 0.08) !important;
+::selection {
+  background: #E8126E20;
+  color: var(--foreground);
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -73,10 +85,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: #d4d4d4;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: #b0b0b0;
 }

@@ -1,11 +1,11 @@
 import {
+  FolderOpen,
+  FileText,
+  Settings,
   LayoutDashboard,
-  Compass,
-  GraduationCap,
   Users,
   Sparkles,
-  Star,
-  Settings,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 
@@ -13,50 +13,18 @@ export interface NavItem {
   title: string;
   href: string;
   icon: LucideIcon;
-  description?: string;
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  {
-    title: "Workshop Overview",
-    href: "/workshop-overview",
-    icon: LayoutDashboard,
-    description: "Executive overview of workshop impact",
-  },
-  {
-    title: "Learning Journey",
-    href: "/learning-journey",
-    icon: Compass,
-    description: "A → B → C understanding progression",
-  },
-  {
-    title: "Knowledge Growth",
-    href: "/knowledge-growth",
-    icon: GraduationCap,
-    description: "Measure knowledge growth across topics",
-  },
-  {
-    title: "Team Collaboration",
-    href: "/team-collaboration",
-    icon: Users,
-    description: "Team dynamics and collaboration insights",
-  },
-  {
-    title: "Activity Impact",
-    href: "/activity-impact",
-    icon: Sparkles,
-    description: "Rank and evaluate workshop activities",
-  },
-  {
-    title: "Facilitation Insights",
-    href: "/facilitation-insights",
-    icon: Star,
-    description: "Facilitator ratings and feedback",
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-    description: "Platform preferences and research context",
-  },
+export const GLOBAL_NAV: NavItem[] = [
+  { title: "Workshops", href: "/workshops", icon: FolderOpen },
+  { title: "Reports", href: "/reports", icon: FileText },
+  { title: "Settings", href: "/settings", icon: Settings },
+];
+
+export const WORKSHOP_NAV: NavItem[] = [
+  { title: "Overview", href: "/overview", icon: LayoutDashboard },
+  { title: "Insights", href: "/insights", icon: Sparkles },
+  { title: "Participants", href: "/participants", icon: Users },
+  { title: "Impact Report", href: "/impact-report", icon: BarChart3 },
+  { title: "Settings", href: "/settings", icon: Settings },
 ];

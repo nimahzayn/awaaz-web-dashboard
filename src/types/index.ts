@@ -1,3 +1,22 @@
+export type WorkshopStatus = "draft" | "uploaded" | "analyzed";
+
+export interface Workshop {
+  id: string;
+  name: string;
+  cohort: string;
+  location: string;
+  date: string;
+  description: string;
+  status: WorkshopStatus;
+  preUploadedAt: string | null;
+  postUploadedAt: string | null;
+  analyzedAt: string | null;
+  preCount: number;
+  postCount: number;
+  matchedCount: number;
+  createdAt: string;
+}
+
 export interface MetricData {
   id: string;
   label: string;
@@ -136,6 +155,7 @@ export interface TopicMetric {
 }
 
 export interface AnalyticsSnapshot {
+  workshopId?: string;
   participants: number;
   completedSurveys: number;
   workshopImpactScore: number;
@@ -177,4 +197,12 @@ export interface AnalyticsSnapshot {
     suggestions: string[];
   };
   educatorInsights: string[];
+}
+
+export interface ParticipantData {
+  name: string;
+  preWorkshop: Record<string, number>;
+  retrospective: Record<string, number>;
+  postWorkshop: Record<string, number>;
+  overallGrowth: number;
 }

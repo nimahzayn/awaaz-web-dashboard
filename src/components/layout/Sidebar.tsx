@@ -1,142 +1,88 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft } from "lucide-react";
+import { GLOBAL_NAV, WORKSHOP_NAV } from "@/constants/navigation";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "@/constants/navigation";
-import { useSidebar } from "@/hooks/useSidebar";
-import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
-export function Sidebar() {
+interface SidebarProps {
+  workshopId?: string;
+  workshopName?: string;
+}
+
+export function Sidebar({ workshopId, workshopName }: SidebarProps) {
   const pathname = usePathname();
-  const { isOpen, toggle, close } = useSidebar();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const inWorkshop = !!workshopId;
+  const basePath = `/workshops/${workshopId}`;
+  const navItems = inWorkshop ? WORKSHOP_NAV : GLOBAL_NAV;
 
   return (
-    <>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-dark/20 backdrop-blur-sm lg:hidden"
-            onClick={close}
-            aria-hidden="true"
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border bg-surface transition-all duration-300",
+        collapsed ? "w-[68px]" : "w-[240px]"
+      )}
+    >
+      <div className="flex h-16 items-center border-b border-border px-5">
+        <Link href="/workshops" className="flex items-center gap-3 overflow-hidden">
+          <img
+            src="/awaaz-logo.png"
+            alt="Awaaz"
+            className="h-8 w-auto shrink-0 object-contain"
           />
-        )}
-      </AnimatePresence>
-
-      <motion.aside
-        initial={false}
-        animate={{
-          width: isOpen ? 280 : 0,
-          opacity: isOpen ? 1 : 0,
-        }}
-        transition={{ duration: 0.25, ease: "easeInOut" }}
-        className={cn(
-          "fixed left-0 top-0 z-50 flex h-full flex-col overflow-hidden border-r border-border bg-surface",
-          "lg:relative lg:z-auto lg:opacity-100",
-          isOpen ? "lg:w-[280px]" : "lg:w-[72px]"
-        )}
-        aria-label="Main navigation"
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-5">
-          <Link
-            href="/"
-            className={cn(
-              "flex w-full items-center justify-center transition-opacity",
-              !isOpen && "lg:opacity-0 lg:pointer-events-none"
-            )}
-          >
-            <Image
-              src="/awaaz-logo.png"
-              alt="Awaaz Leadership Labs"
-              width={160}
-              height={67}
-              className="h-auto w-[140px] object-contain lg:w-[160px]"
-              priority
-            />
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggle}
-            className="absolute right-2 top-4 h-8 w-8 shrink-0"
-            aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <X className="h-4 w-4 lg:hidden" />
-            <ChevronLeft
-              className={cn(
-                "h-4 w-4 hidden lg:block transition-transform",
-                !isOpen && "rotate-180"
-              )}
-            />
-          </Button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto px-3 py-4" role="navigation">
-          <ul className="space-y-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== "/" && pathname.startsWith(item.href));
-              const Icon = item.icon;
-
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={() => {
-                      if (window.innerWidth < 1024) close();
-                    }}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                    aria-current={isActive ? "page" : undefined}
-                    title={!isOpen ? item.title : undefined}
-                  >
-                    <Icon
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                      )}
-                      aria-hidden="true"
-                    />
-                    <span
-                      className={cn(
-                        "truncate transition-opacity",
-                        !isOpen && "lg:hidden"
-                      )}
-                    >
-                      {item.title}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <div
-          className={cn(
-            "shrink-0 border-t border-border p-4",
-            !isOpen && "lg:hidden"
+          {!collapsed && (
+            <span className="text-sm font-semibold text-foreground truncate">
+              Workshop Analysis
+            </span>
           )}
-        >
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Justice Innovation Workshop Analytics
-          </p>
-          <p className="mt-1 text-[10px] text-muted-foreground/70">
-            Awaaz Leadership Labs
-          </p>
+        </Link>
+      </div>
+
+      {inWorkshop && !collapsed && (
+        <div className="border-b border-border px-5 py-3">
+          <p className="text-xs text-muted-foreground">Workshop</p>
+          <p className="text-sm font-medium text-foreground truncate">{workshopName}</p>
         </div>
-      </motion.aside>
-    </>
+      )}
+
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <ul className="space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const href = inWorkshop ? `${basePath}${item.href}` : item.href;
+            const isActive = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <li key={item.href}>
+                <Link
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{item.title}</span>}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <div className="border-t border-border p-3">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex w-full items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      </div>
+    </aside>
   );
 }

@@ -27,18 +27,13 @@ export function Sidebar({ workshopId, workshopName }: SidebarProps) {
         collapsed ? "w-[68px]" : "w-[240px]"
       )}
     >
-      <div className="flex h-16 items-center border-b border-border px-5">
-        <Link href="/workshops" className="flex items-center gap-3 overflow-hidden">
+      <div className="flex h-16 items-center justify-center border-b border-border px-4">
+        <Link href="/workshops" className="flex items-center justify-center">
           <img
             src="/awaaz-logo.png"
             alt="Awaaz"
-            className="h-8 w-auto shrink-0 object-contain"
+            className="h-14 w-auto shrink-0 object-contain"
           />
-          {!collapsed && (
-            <span className="text-sm font-semibold text-foreground truncate">
-              Workshop Analysis
-            </span>
-          )}
         </Link>
       </div>
 

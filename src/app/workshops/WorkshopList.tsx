@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
+<<<<<<< HEAD
 import { Plus, ArrowRight, Loader2, CheckCircle2, FileUp } from "lucide-react";
+=======
+import { Plus, ArrowRight, Loader2, CheckCircle2, Clock, FileUp } from "lucide-react";
+>>>>>>> eca607128818d652d280ea17157714cd56e4476f
 import type { Workshop } from "@/types";
 
 interface WorkshopListProps {
@@ -26,6 +30,19 @@ export function WorkshopList({ workshops }: WorkshopListProps) {
         </p>
       </div>
 
+<<<<<<< HEAD
+=======
+      <div>
+        <Link
+          href="/workshops/new"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 hover:shadow-lg"
+        >
+          <Plus className="h-4 w-4" />
+          Create Workshop
+        </Link>
+      </div>
+
+>>>>>>> eca607128818d652d280ea17157714cd56e4476f
       {workshops.length === 0 ? (
         <div className="rounded-2xl border border-border/60 bg-surface px-12 py-20 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/5">

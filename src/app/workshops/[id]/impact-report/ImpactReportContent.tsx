@@ -1,7 +1,11 @@
 "use client";
 
 import type { Workshop, AnalyticsSnapshot } from "@/types";
+<<<<<<< HEAD
 import { Download, FileText, MapPin, Calendar, Users, TrendingUp } from "lucide-react";
+=======
+import { Download, FileText, Share2, MapPin, Calendar, Users, TrendingUp } from "lucide-react";
+>>>>>>> eca607128818d652d280ea17157714cd56e4476f
 
 interface ImpactReportContentProps {
   workshop: Workshop;

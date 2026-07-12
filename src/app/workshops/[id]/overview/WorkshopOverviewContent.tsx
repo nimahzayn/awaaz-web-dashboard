@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import type { Workshop, AnalyticsSnapshot } from "@/types";
+<<<<<<< HEAD
 import { Upload, MapPin, Calendar, ArrowRight, Sparkles } from "lucide-react";
+=======
+import { Upload, MapPin, Calendar, Users, ArrowRight, Sparkles } from "lucide-react";
+>>>>>>> eca607128818d652d280ea17157714cd56e4476f
 
 interface WorkshopOverviewContentProps {
   workshop: Workshop;

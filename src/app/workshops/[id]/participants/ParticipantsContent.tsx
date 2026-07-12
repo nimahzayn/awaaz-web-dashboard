@@ -15,7 +15,11 @@ export function ParticipantsContent({ workshopId, responses }: ParticipantsConte
   const filtered = useMemo(() => {
     if (!search) return responses;
     const q = search.toLowerCase();
+<<<<<<< HEAD
     return responses.filter((r) => (r.email || "").toLowerCase().includes(q));
+=======
+    return responses.filter((r) => r.id.toLowerCase().includes(q));
+>>>>>>> eca607128818d652d280ea17157714cd56e4476f
   }, [responses, search]);
 
   return (
@@ -47,10 +51,17 @@ export function ParticipantsContent({ workshopId, responses }: ParticipantsConte
           const growth = postAvg - preAvg;
 
           return (
+<<<<<<< HEAD
             <div key={r.email || i} className="rounded-xl border border-border/40 bg-surface p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-foreground">{r.email}</p>
+=======
+            <div key={r.id || i} className="rounded-xl border border-border/40 bg-surface p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-foreground capitalize">{r.id.replace(/-/g, " ")}</p>
+>>>>>>> eca607128818d652d280ea17157714cd56e4476f
                   <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                     <span>A: {preAvg.toFixed(1)}</span>
                     <span>→</span>

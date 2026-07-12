@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { notFound } from "next/navigation";
+=======
+import { notFound, redirect } from "next/navigation";
+>>>>>>> eca607128818d652d280ea17157714cd56e4476f
 import { getWorkshop, workshopHasData } from "@/services/workshops";
 import { computeAnalytics } from "@/services/analytics";
 import { WorkshopOverviewContent } from "./WorkshopOverviewContent";

@@ -26,6 +26,16 @@ export function WorkshopList({ workshops }: WorkshopListProps) {
         </p>
       </div>
 
+      <div>
+        <Link
+          href="/workshops/new"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 hover:shadow-lg"
+        >
+          <Plus className="h-4 w-4" />
+          Create Workshop
+        </Link>
+      </div>
+
       {workshops.length === 0 ? (
         <div className="rounded-2xl border border-border/60 bg-surface px-12 py-20 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/5">
@@ -35,13 +45,6 @@ export function WorkshopList({ workshops }: WorkshopListProps) {
           <p className="mt-2 max-w-sm mx-auto text-sm leading-relaxed text-muted-foreground">
             Create your first workshop to begin uploading survey data and generating AI-powered insights.
           </p>
-          <Link
-            href="/workshops/new"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Create your first workshop
-          </Link>
         </div>
       ) : (
         <div className="space-y-3">

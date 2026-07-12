@@ -1,18 +1,18 @@
 [
   {
-    "id": "ws-1783872326114-sajpcf",
+    "id": "ws-1783878146894-n1157f",
     "name": "Amity University",
     "cohort": "Cohort 1",
     "location": "Gwalior",
     "date": "2026-03",
     "description": "",
     "status": "analyzed",
-    "preUploadedAt": "2026-07-12T16:05:57.576Z",
-    "postUploadedAt": "2026-07-12T16:06:04.447Z",
-    "analyzedAt": "2026-07-12T16:06:12.344Z",
+    "preUploadedAt": "2026-07-12T17:42:35.144Z",
+    "postUploadedAt": "2026-07-12T17:42:42.434Z",
+    "analyzedAt": "2026-07-12T17:42:45.043Z",
     "preCount": 67,
     "postCount": 54,
     "matchedCount": 50,
-    "createdAt": "2026-07-12T16:05:26.115Z"
+    "createdAt": "2026-07-12T17:42:26.894Z"
   }
 ]

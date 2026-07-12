@@ -10,6 +10,7 @@ import {
   writeWorkshopFile,
   updateWorkshopStatus,
   workshopHasData,
+  deleteWorkshop as deleteWorkshopFromStore,
 } from "./workshops";
 
 type SheetRow = Record<string, string>;
@@ -141,12 +142,12 @@ function mergeDatasets(
     const q16Aliases = ["16whichofthefollowingdoyoufeelyoudevelopedthroughthisworkshop", "q16", "developedskills"];
     const q16Value = getCell(postRow, q16Aliases).toLowerCase();
     if (q16Value) {
-      if (leadership === 0 && q16Value.includes("leadership")) leadership = 5;
-      if (criticalThinking === 0 && (q16Value.includes("critical thinking") || q16Value.includes("criticalthinking"))) criticalThinking = 5;
-      if (empathy === 0 && q16Value.includes("empathy")) empathy = 5;
-      if (problemSolving === 0 && (q16Value.includes("problem solving") || q16Value.includes("problemsolving"))) problemSolving = 5;
-      if (communication === 0 && q16Value.includes("communication")) communication = 5;
-      if (justiceUnderstanding === 0 && (q16Value.includes("justice understanding") || q16Value.includes("justice"))) justiceUnderstanding = 5;
+      if (leadership === 0 && (q16Value.includes("leadership") || q16Value.includes("innovation"))) leadership = 5;
+      if (criticalThinking === 0 && (q16Value.includes("critical thinking") || q16Value.includes("criticalthinking") || q16Value.includes("creative"))) criticalThinking = 5;
+      if (empathy === 0 && (q16Value.includes("empathy") || q16Value.includes("community"))) empathy = 5;
+      if (problemSolving === 0 && (q16Value.includes("problem solving") || q16Value.includes("problemsolving") || q16Value.includes("problem-solving"))) problemSolving = 5;
+      if (communication === 0 && (q16Value.includes("communication") || q16Value.includes("collaboration") || q16Value.includes("teamwork"))) communication = 5;
+      if (justiceUnderstanding === 0 && (q16Value.includes("justice understanding") || q16Value.includes("justice") || q16Value.includes("legal"))) justiceUnderstanding = 5;
     }
 
     let facilitatorRating = toNumber(getCell(postRow, ["facilitatorrating"]));
@@ -317,10 +318,17 @@ export async function generateAnalysis(workshopId: string) {
     return { success: false, error: "Both pre and post workshop surveys must be uploaded first." };
   }
 
+  await tryMerge(workshopId);
+
   const { computeAnalytics } = await import("./analytics");
   const analytics = await computeAnalytics(workshopId);
   await writeWorkshopFile(workshopId, "analysis.json", analytics);
   await updateWorkshopStatus(workshopId, "analyzed", { analyzedAt: new Date().toISOString() });
 
+  return { success: true };
+}
+
+export async function deleteWorkshop(workshopId: string) {
+  await deleteWorkshopFromStore(workshopId);
   return { success: true };
 }

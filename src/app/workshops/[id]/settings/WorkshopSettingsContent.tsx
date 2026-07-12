@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition, useRef } from "react";
-import { uploadPreWorkshop, uploadPostWorkshop, generateAnalysis } from "@/services/workshop-actions";
-import { Upload, Loader2, Sparkles, CheckCircle2, Pencil } from "lucide-react";
+import { uploadPreWorkshop, uploadPostWorkshop, generateAnalysis, deleteWorkshop } from "@/services/workshop-actions";
+import { Upload, Loader2, Sparkles, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import type { Workshop } from "@/types";
 import Link from "next/link";
 
@@ -45,8 +45,23 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettin
 
   async function handleGenerate() {
     startTransition(async () => {
-      await generateAnalysis(workshop.id);
+      try {
+        const result = await generateAnalysis(workshop.id);
+        if (result && "error" in result) {
+          alert("Error: " + (result as { error: string }).error);
+        }
+      } catch (err) {
+        alert("Failed: " + String(err));
+      }
       router.refresh();
+    });
+  }
+
+  async function handleDelete() {
+    if (!confirm("Delete this workshop and all its data? This cannot be undone.")) return;
+    startTransition(async () => {
+      await deleteWorkshop(workshop.id);
+      router.push("/workshops");
     });
   }
 
@@ -177,6 +192,21 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettin
           </Link>
         </div>
       )}
+
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+        <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
+        <p className="mt-1 text-xs text-red-600">
+          Permanently delete this workshop and all uploaded data.
+        </p>
+        <button
+          onClick={handleDelete}
+          disabled={pending}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete Workshop
+        </button>
+      </div>
 
       {pending && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">

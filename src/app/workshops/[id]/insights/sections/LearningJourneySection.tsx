@@ -2,6 +2,16 @@
 
 import type { AnalyticsSnapshot } from "@/types";
 import { TrendingUp } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 export function LearningJourneySection({ analytics }: { analytics: AnalyticsSnapshot }) {
   const allTopics = [...analytics.identityTopics, analytics.creativePedagogy, analytics.problemSolving];
@@ -15,6 +25,13 @@ export function LearningJourneySection({ analytics }: { analytics: AnalyticsSnap
     { label: "B", title: "Retrospective Reflection", value: avgB, desc: "Revised pre-workshop view" },
     { label: "C", title: "Current Understanding", value: avgC, desc: "After the workshop" },
   ];
+
+  const chartData = allTopics.map((t) => ({
+    topic: t.topic,
+    "A · Original": Number(t.a.toFixed(1)),
+    "B · Reflection": Number(t.b.toFixed(1)),
+    "C · Current": Number(t.c.toFixed(1)),
+  }));
 
   return (
     <section className="space-y-8">
@@ -56,6 +73,43 @@ export function LearningJourneySection({ analytics }: { analytics: AnalyticsSnap
         <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
           Participants demonstrated significant conceptual growth after the workshop. The retrospective step (B) reveals that initial self-assessments were often higher than actual understanding, and the post-workshop measurement (C) shows genuine learning.
         </p>
+      </div>
+
+      <div className="rounded-2xl border border-border/60 bg-surface p-6">
+        <h3 className="text-sm font-semibold text-foreground mb-4">Learning Trajectory by Topic</h3>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={chartData} barCategoryGap="20%">
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+            <XAxis
+              dataKey="topic"
+              tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              domain={[0, 5]}
+              tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                borderRadius: "12px",
+                border: "1px solid var(--color-border)",
+                background: "var(--color-surface)",
+                fontSize: 12,
+              }}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: 12 }}
+              iconType="circle"
+              iconSize={8}
+            />
+            <Bar dataKey="A · Original" fill="#E8126E" radius={[4, 4, 0, 0]} opacity={0.4} />
+            <Bar dataKey="B · Reflection" fill="#E8126E" radius={[4, 4, 0, 0]} opacity={0.7} />
+            <Bar dataKey="C · Current" fill="#E8126E" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       <div className="space-y-3">

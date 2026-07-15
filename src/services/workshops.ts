@@ -1,31 +1,18 @@
 "use server";
 
-import fs from "fs";
-import path from "path";
 import type { Workshop } from "@/types";
+import { readJson, writeJson, fileExists, deleteByPrefix } from "./storage";
 
-const DATA_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "src", "data");
-const WORKSHOPS_FILE = path.join(DATA_DIR, "workshops.json");
+const WORKSHOPS_FILE = "workshops.json";
+const WORKSHOPS_PREFIX = "workshops/";
 
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+async function readWorkshops(): Promise<Workshop[]> {
+  const data = await readJson(WORKSHOPS_FILE);
+  return Array.isArray(data) ? data : [];
 }
 
-function readWorkshops(): Workshop[] {
-  ensureDataDir();
-  if (!fs.existsSync(WORKSHOPS_FILE)) return [];
-  return JSON.parse(fs.readFileSync(WORKSHOPS_FILE, "utf-8"));
-}
-
-function writeWorkshops(workshops: Workshop[]) {
-  ensureDataDir();
-  fs.writeFileSync(WORKSHOPS_FILE, JSON.stringify(workshops, null, 2));
-}
-
-function workshopDir(id: string) {
-  const dir = path.join(DATA_DIR, "workshops", id);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
+async function writeWorkshops(workshops: Workshop[]) {
+  await writeJson(WORKSHOPS_FILE, workshops);
 }
 
 export async function getWorkshops(): Promise<Workshop[]> {
@@ -33,7 +20,7 @@ export async function getWorkshops(): Promise<Workshop[]> {
 }
 
 export async function getWorkshop(id: string): Promise<Workshop | null> {
-  const workshops = readWorkshops();
+  const workshops = await readWorkshops();
   return workshops.find((w) => w.id === id) || null;
 }
 
@@ -44,7 +31,7 @@ export async function createWorkshop(data: {
   date: string;
   description: string;
 }): Promise<Workshop> {
-  const workshops = readWorkshops();
+  const workshops = await readWorkshops();
   const id = `ws-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const workshop: Workshop = {
     id,
@@ -59,18 +46,16 @@ export async function createWorkshop(data: {
     createdAt: new Date().toISOString(),
   };
   workshops.unshift(workshop);
-  writeWorkshops(workshops);
-  workshopDir(id);
+  await writeWorkshops(workshops);
   return workshop;
 }
 
 export async function deleteWorkshop(id: string): Promise<boolean> {
-  const workshops = readWorkshops();
+  const workshops = await readWorkshops();
   const filtered = workshops.filter((w) => w.id !== id);
   if (filtered.length === workshops.length) return false;
-  writeWorkshops(filtered);
-  const dir = path.join(DATA_DIR, "workshops", id);
-  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
+  await writeWorkshops(filtered);
+  await deleteByPrefix(`${WORKSHOPS_PREFIX}${id}/`);
   return true;
 }
 
@@ -78,11 +63,11 @@ export async function updateWorkshop(
   id: string,
   updates: Partial<Pick<Workshop, "name" | "cohort" | "location" | "date" | "description">>
 ): Promise<Workshop | null> {
-  const workshops = readWorkshops();
+  const workshops = await readWorkshops();
   const idx = workshops.findIndex((w) => w.id === id);
   if (idx === -1) return null;
   workshops[idx] = { ...workshops[idx], ...updates };
-  writeWorkshops(workshops);
+  await writeWorkshops(workshops);
   return workshops[idx];
 }
 
@@ -91,28 +76,26 @@ export async function updateWorkshopStatus(
   status: Workshop["status"],
   extra?: Partial<Workshop>
 ): Promise<void> {
-  const workshops = readWorkshops();
+  const workshops = await readWorkshops();
   const idx = workshops.findIndex((w) => w.id === id);
   if (idx === -1) return;
   workshops[idx] = { ...workshops[idx], status, ...extra };
-  writeWorkshops(workshops);
+  await writeWorkshops(workshops);
 }
 
 export async function getWorkshopFilePaths(id: string) {
-  const dir = workshopDir(id);
+  const base = `${WORKSHOPS_PREFIX}${id}`;
   return {
-    preJson: path.join(dir, "pre_responses.json"),
-    postJson: path.join(dir, "post_responses.json"),
-    mergedJson: path.join(dir, "survey_responses.json"),
-    analysisJson: path.join(dir, "analysis.json"),
+    preJson: `${base}/pre_responses.json`,
+    postJson: `${base}/post_responses.json`,
+    mergedJson: `${base}/survey_responses.json`,
+    analysisJson: `${base}/analysis.json`,
   };
 }
 
 export async function readWorkshopFile(id: string, filename: string): Promise<any> {
-  const dir = workshopDir(id);
-  const filePath = path.join(dir, filename);
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  const key = `${WORKSHOPS_PREFIX}${id}/${filename}`;
+  return readJson(key);
 }
 
 export async function writeWorkshopFile(
@@ -120,8 +103,8 @@ export async function writeWorkshopFile(
   filename: string,
   data: any
 ): Promise<void> {
-  const dir = workshopDir(id);
-  fs.writeFileSync(path.join(dir, filename), JSON.stringify(data, null, 2));
+  const key = `${WORKSHOPS_PREFIX}${id}/${filename}`;
+  await writeJson(key, data);
 }
 
 export async function workshopHasData(id: string): Promise<{
@@ -133,25 +116,25 @@ export async function workshopHasData(id: string): Promise<{
   matchedCount: number;
 }> {
   const paths = await getWorkshopFilePaths(id);
-  const pre = fs.existsSync(paths.preJson);
-  const post = fs.existsSync(paths.postJson);
-  const analysis = fs.existsSync(paths.analysisJson);
+  const pre = await fileExists(paths.preJson);
+  const post = await fileExists(paths.postJson);
+  const analysis = await fileExists(paths.analysisJson);
 
   let preCount = 0;
   let postCount = 0;
   let matchedCount = 0;
 
   if (pre) {
-    const data = JSON.parse(fs.readFileSync(paths.preJson, "utf-8"));
+    const data = await readJson(paths.preJson);
     preCount = Array.isArray(data) ? data.length : 0;
   }
   if (post) {
-    const data = JSON.parse(fs.readFileSync(paths.postJson, "utf-8"));
+    const data = await readJson(paths.postJson);
     postCount = Array.isArray(data) ? data.length : 0;
   }
   if (analysis) {
-    const data = JSON.parse(fs.readFileSync(paths.analysisJson, "utf-8"));
-    matchedCount = data.participants || 0;
+    const data = await readJson(paths.analysisJson);
+    matchedCount = data?.participants || 0;
   }
 
   return { pre, post, analysis, preCount, postCount, matchedCount };

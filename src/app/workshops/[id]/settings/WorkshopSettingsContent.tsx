@@ -58,11 +58,14 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettin
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this workshop and all its data? This cannot be undone.")) return;
-    startTransition(async () => {
+    const ok = confirm("Delete this workshop and all its data? This cannot be undone.");
+    if (!ok) return;
+    try {
       await deleteWorkshop(workshop.id);
-      router.push("/workshops");
-    });
+      window.location.href = "/workshops";
+    } catch (err) {
+      alert("Delete failed: " + (err instanceof Error ? err.message : String(err)));
+    }
   }
 
   const canGenerate = dataStatus.pre && dataStatus.post && !dataStatus.analysis;
@@ -200,8 +203,7 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettin
         </p>
         <button
           onClick={handleDelete}
-          disabled={pending}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-50"
         >
           <Trash2 className="h-4 w-4" />
           Delete Workshop

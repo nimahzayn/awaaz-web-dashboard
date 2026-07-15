@@ -1,7 +1,5 @@
 "use server";
 
-import fs from "fs";
-import path from "path";
 import * as XLSX from "xlsx";
 import type { SurveyResponse, Workshop } from "@/types";
 import {

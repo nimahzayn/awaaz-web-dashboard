@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.env*
+.neon
+
+# db scripts (local use only)
+scripts/check_db.js

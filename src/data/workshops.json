@@ -1,18 +1,18 @@
 [
   {
-    "id": "ws-1783878146894-n1157f",
-    "name": "Amity University",
+    "id": "ws-1784380041664-35x9o6",
+    "name": "leadership",
     "cohort": "Cohort 1",
-    "location": "Gwalior",
-    "date": "2026-03",
+    "location": "kerala",
+    "date": "2026-12",
     "description": "",
-    "status": "analyzed",
-    "preUploadedAt": "2026-07-12T17:42:35.144Z",
-    "postUploadedAt": "2026-07-12T17:42:42.434Z",
-    "analyzedAt": "2026-07-12T17:42:45.043Z",
-    "preCount": 67,
-    "postCount": 54,
-    "matchedCount": 50,
-    "createdAt": "2026-07-12T17:42:26.894Z"
+    "status": "draft",
+    "preUploadedAt": null,
+    "postUploadedAt": null,
+    "analyzedAt": null,
+    "preCount": 0,
+    "postCount": 0,
+    "matchedCount": 0,
+    "createdAt": "2026-07-18T13:07:21.665Z"
   }
 ]

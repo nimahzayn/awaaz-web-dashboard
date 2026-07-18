@@ -1,14 +1,17 @@
 "use server";
 
 import * as XLSX from "xlsx";
-import type { SurveyResponse, Workshop } from "@/types";
+import type { SurveyResponse } from "@/types";
 import {
-  getWorkshop,
-  readWorkshopFile,
-  writeWorkshopFile,
+  savePreData,
+  savePostData,
+  getPreData,
+  getPostData,
+  saveSurveyResponses,
   updateWorkshopStatus,
   workshopHasData,
   deleteWorkshop as deleteWorkshopFromStore,
+  saveAnalytics,
 } from "./workshops";
 
 type SheetRow = Record<string, string>;
@@ -250,7 +253,7 @@ export async function uploadPreWorkshop(workshopId: string, formData: FormData) 
     return { success: false, error: "Could not find an email or name column to identify participants." };
   }
 
-  await writeWorkshopFile(workshopId, "pre_responses.json", rows);
+  await savePreData(workshopId, rows);
   await updateWorkshopStatus(workshopId, "uploaded", {
     preUploadedAt: new Date().toISOString(),
     preCount: rows.length,
@@ -289,7 +292,7 @@ export async function uploadPostWorkshop(workshopId: string, formData: FormData)
     return { success: false, error: "Could not find an email or name column to identify participants." };
   }
 
-  await writeWorkshopFile(workshopId, "post_responses.json", rows);
+  await savePostData(workshopId, rows);
   await updateWorkshopStatus(workshopId, "uploaded", {
     postUploadedAt: new Date().toISOString(),
     postCount: rows.length,
@@ -301,12 +304,12 @@ export async function uploadPostWorkshop(workshopId: string, formData: FormData)
 }
 
 async function tryMerge(workshopId: string) {
-  const pre = await readWorkshopFile(workshopId, "pre_responses.json");
-  const post = await readWorkshopFile(workshopId, "post_responses.json");
+  const pre = await getPreData(workshopId);
+  const post = await getPostData(workshopId);
   if (!pre || !post) return;
 
   const { merged, matchedCount } = mergeDatasets(pre, post);
-  await writeWorkshopFile(workshopId, "survey_responses.json", merged);
+  await saveSurveyResponses(workshopId, merged);
   await updateWorkshopStatus(workshopId, "uploaded", { matchedCount });
 }
 
@@ -320,7 +323,7 @@ export async function generateAnalysis(workshopId: string) {
 
   const { computeAnalytics } = await import("./analytics");
   const analytics = await computeAnalytics(workshopId);
-  await writeWorkshopFile(workshopId, "analysis.json", analytics);
+  await saveAnalytics(workshopId, analytics);
   await updateWorkshopStatus(workshopId, "analyzed", { analyzedAt: new Date().toISOString() });
 
   return { success: true };

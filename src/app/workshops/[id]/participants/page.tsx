@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getWorkshop, workshopHasData, readWorkshopFile } from "@/services/workshops";
+import { getWorkshop, workshopHasData, getSurveyResponses } from "@/services/workshops";
 import { ParticipantsContent } from "./ParticipantsContent";
 
 export const metadata = { title: "Participants" };
@@ -23,6 +23,6 @@ export default async function ParticipantsPage({
     );
   }
 
-  const responses = await readWorkshopFile(id, "survey_responses.json");
+  const responses = await getSurveyResponses(id);
   return <ParticipantsContent workshopId={id} responses={responses || []} />;
 }

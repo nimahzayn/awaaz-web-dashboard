@@ -1,5 +1,5 @@
 import type { AnalyticsSnapshot, SurveyResponse, TopicMetric } from "@/types";
-import { readWorkshopFile } from "./workshops";
+import { getSurveyResponses } from "./workshops";
 
 const TOPICS = ["caste", "gender", "religion"] as const;
 
@@ -36,7 +36,7 @@ function summarizeTopic(topic: (typeof TOPICS)[number], responses: SurveyRespons
 }
 
 export async function computeAnalytics(workshopId: string): Promise<AnalyticsSnapshot> {
-  const responses: SurveyResponse[] = (await readWorkshopFile(workshopId, "survey_responses.json")) || [];
+  const responses: SurveyResponse[] = (await getSurveyResponses(workshopId)) || [];
 
   const identityTopics = TOPICS.map((topic) => summarizeTopic(topic, responses));
 

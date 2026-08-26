@@ -26,10 +26,12 @@ export function InsightsContent({ workshop, analytics }: InsightsContentProps) {
       </div>
 
       <LearningJourneySection analytics={analytics} />
-      <PerceptionShiftSection topics={analytics.identityTopics} />
+      {analytics.dimensions.length > 0 && <PerceptionShiftSection topics={analytics.dimensions} />}
       <KnowledgeGrowthSection analytics={analytics} />
-      <ActivityImpactSection activities={analytics.activities} />
-      <SentimentSection analytics={analytics} />
+      {analytics.activities.length > 0 && <ActivityImpactSection activities={analytics.activities} />}
+      {(analytics.collaboration || analytics.facilitator || analytics.overallSatisfaction !== null) && (
+        <SentimentSection analytics={analytics} />
+      )}
       <RecommendationsSection analytics={analytics} />
     </div>
   );

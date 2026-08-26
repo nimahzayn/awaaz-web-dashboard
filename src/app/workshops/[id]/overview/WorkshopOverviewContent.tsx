@@ -8,10 +8,19 @@ interface WorkshopOverviewContentProps {
   workshop: Workshop;
   analytics: AnalyticsSnapshot | null;
   hasData: boolean;
+  dataStatus?: {
+    a: boolean;
+    b: boolean;
+    c: boolean;
+    analysis: boolean;
+  };
 }
 
-export function WorkshopOverviewContent({ workshop, analytics, hasData }: WorkshopOverviewContentProps) {
+export function WorkshopOverviewContent({ workshop, analytics, hasData, dataStatus }: WorkshopOverviewContentProps) {
   if (!hasData || !analytics) {
+    const formsUploaded = dataStatus?.a && dataStatus?.b && dataStatus?.c;
+    const missingFormC = dataStatus?.a && dataStatus?.b && !dataStatus?.c;
+
     return (
       <div className="space-y-10">
         <div className="space-y-2">
@@ -29,7 +38,7 @@ export function WorkshopOverviewContent({ workshop, analytics, hasData }: Worksh
               </span>
             )}
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-              Draft
+              {formsUploaded ? "Ready to Analyze" : "Draft"}
             </span>
           </div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl text-foreground sm:text-4xl">
@@ -39,18 +48,41 @@ export function WorkshopOverviewContent({ workshop, analytics, hasData }: Worksh
 
         <div className="rounded-2xl border border-border/60 bg-surface px-12 py-20 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/5">
-            <Upload className="h-7 w-7 text-primary/40" />
+            {formsUploaded ? (
+              <Sparkles className="h-7 w-7 text-primary/40" />
+            ) : (
+              <Upload className="h-7 w-7 text-primary/40" />
+            )}
           </div>
-          <h3 className="text-lg font-semibold text-foreground">No survey data uploaded yet</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            {formsUploaded
+              ? "Analysis not generated yet"
+              : missingFormC
+                ? "Form C still needed"
+                : "No survey data uploaded yet"}
+          </h3>
           <p className="mt-2 max-w-md mx-auto text-sm leading-relaxed text-muted-foreground">
-            Upload your Pre-Workshop and Post-Workshop survey sheets to begin generating participant insights, learning journeys, and impact reports.
+            {formsUploaded
+              ? "All three forms are uploaded. Go to Settings and click Generate Analysis to create your overview."
+              : missingFormC
+                ? "Forms A and B are uploaded. Upload Form C (Current Understanding) in Settings to continue."
+                : "Upload your Form A, Form B, and Form C survey sheets to begin generating participant insights, learning journeys, and impact reports."}
           </p>
           <Link
             href={`/workshops/${workshop.id}/settings`}
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
           >
-            <Upload className="h-4 w-4" />
-            Upload Survey Files
+            {formsUploaded ? (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Generate Analysis
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Upload Survey Files
+              </>
+            )}
           </Link>
         </div>
       </div>
@@ -125,7 +157,12 @@ export function WorkshopOverviewContent({ workshop, analytics, hasData }: Worksh
               <span className="text-sm font-medium" style={{ color: impactColor }}>{impactLevel} Impact</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Overall satisfaction: <span className="font-semibold text-foreground">{analytics.overallSatisfaction}/5</span> · Learning gain: <span className="font-semibold text-foreground">+{analytics.learningGainIndex}</span>
+              {analytics.overallSatisfaction !== null && (
+                <>
+                  Overall satisfaction: <span className="font-semibold text-foreground">{analytics.overallSatisfaction.toFixed(1)}/5</span> ·{" "}
+                </>
+              )}
+              Learning gain: <span className="font-semibold text-foreground">+{analytics.learningGainIndex}</span>
             </p>
           </div>
         </div>
@@ -135,7 +172,9 @@ export function WorkshopOverviewContent({ workshop, analytics, hasData }: Worksh
         {[
           { label: "Participants", value: analytics.participants, color: "#339CFF" },
           { label: "Completion Rate", value: `${analytics.completedSurveys}/${analytics.participants}`, color: "#44E6AD" },
-          { label: "Satisfaction", value: `${analytics.overallSatisfaction}/5`, color: "#E8126E" },
+          ...(analytics.overallSatisfaction !== null
+            ? [{ label: "Satisfaction", value: `${analytics.overallSatisfaction.toFixed(1)}/5`, color: "#E8126E" }]
+            : []),
           { label: "Learning Gain", value: `+${analytics.learningGainIndex}`, color: "#B07AE6" },
         ].map((m) => (
           <div key={m.label} className="rounded-2xl border border-border/60 bg-surface p-5">

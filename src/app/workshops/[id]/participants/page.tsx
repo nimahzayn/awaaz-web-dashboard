@@ -1,5 +1,11 @@
 import { notFound } from "next/navigation";
-import { getWorkshop, workshopHasData, getSurveyResponses } from "@/services/workshops";
+import {
+  getWorkshop,
+  workshopHasData,
+  getParticipantRecords,
+  getDimensionMap,
+} from "@/services/workshops";
+import type { DimensionMatch, ParticipantRecord } from "@/types";
 import { ParticipantsContent } from "./ParticipantsContent";
 
 export const metadata = { title: "Participants" };
@@ -23,6 +29,15 @@ export default async function ParticipantsPage({
     );
   }
 
-  const responses = await getSurveyResponses(id);
-  return <ParticipantsContent workshopId={id} responses={responses || []} />;
+  const [responses, dimensions] = await Promise.all([
+    getParticipantRecords(id) as Promise<ParticipantRecord[]>,
+    getDimensionMap(id) as Promise<DimensionMatch[] | null>,
+  ]);
+  return (
+    <ParticipantsContent
+      workshopId={id}
+      responses={responses}
+      dimensions={dimensions ?? []}
+    />
+  );
 }

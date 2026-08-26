@@ -3,33 +3,63 @@
 import type { AnalyticsSnapshot } from "@/types";
 
 export function RecommendationsSection({ analytics }: { analytics: AnalyticsSnapshot }) {
-  const sorted = [...analytics.identityTopics].sort((a, b) => a.gain - b.gain);
-  const recommendations = [
-    {
-      title: "Deepen Identity Learning",
-      detail: `Consider adding more activities focused on ${sorted[0]?.topic || "key topics"} where learning gains were smaller.`,
-      type: "growth" as const,
-    },
-    {
+  const sorted = [...analytics.dimensions].sort((a, b) => a.gain - b.gain);
+  const lowest = sorted[0];
+  const topActivity = analytics.activities[0];
+
+  const recommendations: Array<{
+    title: string;
+    detail: string;
+    type: "growth" | "strength" | "action";
+  }> = [];
+
+  if (lowest) {
+    recommendations.push({
+      title: `Deepen ${lowest.topic} Learning`,
+      detail:
+        lowest.gain < 0
+          ? `Participants reported lower confidence in ${lowest.topic} after the workshop (${lowest.gain.toFixed(1)}). Consider revisiting how this dimension is facilitated.`
+          : `Consider adding more activities focused on ${lowest.topic} where learning gains were smaller (+${lowest.gain.toFixed(1)}).`,
+      type: "growth",
+    });
+  }
+
+  if (topActivity) {
+    recommendations.push({
       title: "Leverage Top Activities",
-      detail: `"${analytics.activities[0]?.name}" received the highest rating (${analytics.activities[0]?.rating.toFixed(1)}/5). Use similar formats in future workshops.`,
-      type: "strength" as const,
-    },
-    {
+      detail: `"${topActivity.name}" received the highest rating (${topActivity.rating.toFixed(1)}/5). Use similar formats in future workshops.`,
+      type: "strength",
+    });
+  }
+
+  const challenge = analytics.collaboration?.challenges[0];
+  if (challenge) {
+    recommendations.push({
       title: "Address Team Dynamics",
-      detail: analytics.teamCollaboration.challenges[0]
-        ? `Teams identified "${analytics.teamCollaboration.challenges[0]}" as a challenge. Consider targeted facilitation strategies.`
-        : "Team collaboration is performing well across all dimensions.",
-      type: "action" as const,
-    },
-    {
+      detail: `Teams identified "${challenge}" as a challenge. Consider targeted facilitation strategies.`,
+      type: "action",
+    });
+  }
+
+  const suggestion = analytics.facilitator?.suggestions[0];
+  if (suggestion || (analytics.facilitator?.averageRating ?? null) !== null) {
+    recommendations.push({
       title: "Sustain Facilitation Quality",
-      detail: analytics.facilitator.suggestions[0]
-        ? `Facilitator suggestion: "${analytics.facilitator.suggestions[0]}". Incorporate into future planning.`
-        : `Facilitator scored ${analytics.facilitator.averageRating}/5 — maintain this approach.`,
-      type: "strength" as const,
-    },
-  ];
+      detail: suggestion
+        ? `Facilitator suggestion: "${suggestion}". Incorporate into future planning.`
+        : `Facilitator scored ${analytics.facilitator?.averageRating?.toFixed(1)}/5 — maintain this approach.`,
+      type: "strength",
+    });
+  }
+
+  if (recommendations.length === 0 && sorted.length > 0) {
+    const highest = sorted[sorted.length - 1];
+    recommendations.push({
+      title: `Build on ${highest.topic}`,
+      detail: `${highest.topic} showed the strongest growth (+${highest.gain.toFixed(1)} points). Explore related dimensions in upcoming sessions.`,
+      type: "strength",
+    });
+  }
 
   const typeColors = {
     growth: { bg: "bg-primary/5", dot: "bg-primary" },
@@ -60,6 +90,13 @@ export function RecommendationsSection({ analytics }: { analytics: AnalyticsSnap
             </div>
           );
         })}
+        {recommendations.length === 0 && (
+          <div className="rounded-2xl border border-border/40 bg-surface p-5">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Not enough differentiated data to generate specific recommendations yet.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

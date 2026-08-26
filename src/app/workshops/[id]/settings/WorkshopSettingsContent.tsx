@@ -2,43 +2,81 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition, useRef } from "react";
-import { uploadPreWorkshop, uploadPostWorkshop, generateAnalysis, deleteWorkshop } from "@/services/workshop-actions";
+import { uploadFormA, uploadFormB, uploadFormC, generateAnalysis, deleteWorkshop } from "@/services/workshop-actions";
 import { Upload, Loader2, Sparkles, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import type { Workshop } from "@/types";
 import Link from "next/link";
 
-interface WorkshopSettingsContentProps {
-  workshop: Workshop;
-  dataStatus: {
-    pre: boolean;
-    post: boolean;
-    analysis: boolean;
-    preCount: number;
-    postCount: number;
-    matchedCount: number;
-  };
+interface DataStatus {
+  a: boolean;
+  b: boolean;
+  c: boolean;
+  analysis: boolean;
+  aCount: number;
+  bCount: number;
+  cCount: number;
+  matchedCount: number;
 }
 
-export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettingsContentProps) {
+interface FormCardProps {
+  title: string;
+  subtitle: string;
+  uploaded: boolean;
+  count: number;
+  onUpload: (formData: FormData) => Promise<void>;
+}
+
+function UploadFormCard({ title, subtitle, uploaded, count, onUpload }: Omit<FormCardProps, "pending">) {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-surface p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-foreground">{title}</p>
+          {uploaded ? (
+            <>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-[#44E6AD]">
+                <CheckCircle2 className="h-3 w-3" />
+                {count} responses uploaded
+              </p>
+              <p className="text-[10px] text-muted-foreground">{subtitle}</p>
+            </>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">{subtitle} · Not uploaded yet</p>
+          )}
+        </div>
+      </div>
+      <form
+        ref={formRef}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!formRef.current) return;
+          const fd = new FormData(formRef.current);
+          formRef.current.reset();
+          void onUpload(fd);
+        }}
+        className="flex items-center gap-3"
+      >
+        <label className="flex-1 cursor-pointer">
+          <input type="file" name="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files?.[0]) formRef.current?.requestSubmit(); }} />
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
+            <Upload className="h-4 w-4" />
+            {uploaded ? "Replace file" : "Upload CSV or XLSX"}
+          </div>
+        </label>
+      </form>
+    </div>
+  );
+}
+
+export function WorkshopSettingsContent({ workshop, dataStatus }: { workshop: Workshop; dataStatus: DataStatus }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const preRef = useRef<HTMLFormElement>(null);
-  const postRef = useRef<HTMLFormElement>(null);
 
-  async function handlePreUpload(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
+  async function handleUpload(uploader: (id: string, formData: FormData) => Promise<any>, formData: FormData) {
     startTransition(async () => {
-      await uploadPreWorkshop(workshop.id, form);
-      router.refresh();
-    });
-  }
-
-  async function handlePostUpload(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    startTransition(async () => {
-      await uploadPostWorkshop(workshop.id, form);
+      await uploader(workshop.id, formData);
       router.refresh();
     });
   }
@@ -47,8 +85,8 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettin
     startTransition(async () => {
       try {
         const result = await generateAnalysis(workshop.id);
-        if (result && "error" in result) {
-          alert("Error: " + (result as { error: string }).error);
+        if (result && !result.success && "error" in result) {
+          alert("Error: " + result.error);
         }
       } catch (err) {
         alert("Failed: " + String(err));
@@ -68,7 +106,7 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettin
     }
   }
 
-  const canGenerate = dataStatus.pre && dataStatus.post && !dataStatus.analysis;
+  const canGenerate = dataStatus.a && dataStatus.b && dataStatus.c;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -109,55 +147,29 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: WorkshopSettin
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground">Survey Files</h3>
 
-        <div className="rounded-2xl border border-border/60 bg-surface p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">Pre-Workshop Survey</p>
-              {dataStatus.pre ? (
-                <p className="mt-1 flex items-center gap-1.5 text-xs text-[#44E6AD]">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {dataStatus.preCount} responses uploaded
-                </p>
-              ) : (
-                <p className="mt-1 text-xs text-muted-foreground">Not uploaded yet</p>
-              )}
-            </div>
-          </div>
-          <form ref={preRef} onSubmit={handlePreUpload} className="flex items-center gap-3">
-            <label className="flex-1 cursor-pointer">
-              <input type="file" name="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files?.[0]) preRef.current?.requestSubmit(); }} />
-              <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
-                <Upload className="h-4 w-4" />
-                {dataStatus.pre ? "Replace file" : "Upload CSV or XLSX"}
-              </div>
-            </label>
-          </form>
-        </div>
+        <UploadFormCard
+          title="Form A · Original Understanding"
+          subtitle="Before the workshop"
+          uploaded={dataStatus.a}
+          count={dataStatus.aCount}
+          onUpload={(fd) => handleUpload(uploadFormA, fd)}
+        />
 
-        <div className="rounded-2xl border border-border/60 bg-surface p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">Post-Workshop Survey</p>
-              {dataStatus.post ? (
-                <p className="mt-1 flex items-center gap-1.5 text-xs text-[#44E6AD]">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {dataStatus.postCount} responses uploaded
-                </p>
-              ) : (
-                <p className="mt-1 text-xs text-muted-foreground">Not uploaded yet</p>
-              )}
-            </div>
-          </div>
-          <form ref={postRef} onSubmit={handlePostUpload} className="flex items-center gap-3">
-            <label className="flex-1 cursor-pointer">
-              <input type="file" name="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files?.[0]) postRef.current?.requestSubmit(); }} />
-              <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
-                <Upload className="h-4 w-4" />
-                {dataStatus.post ? "Replace file" : "Upload CSV or XLSX"}
-              </div>
-            </label>
-          </form>
-        </div>
+        <UploadFormCard
+          title="Form B · Retrospective Reflection"
+          subtitle="Revised pre-workshop view"
+          uploaded={dataStatus.b}
+          count={dataStatus.bCount}
+          onUpload={(fd) => handleUpload(uploadFormB, fd)}
+        />
+
+        <UploadFormCard
+          title="Form C · Current Understanding"
+          subtitle="After the workshop"
+          uploaded={dataStatus.c}
+          count={dataStatus.cCount}
+          onUpload={(fd) => handleUpload(uploadFormC, fd)}
+        />
       </div>
 
       {canGenerate && (

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { getWorkshop, workshopHasData } from "@/services/workshops";
-import { computeAnalytics } from "@/services/analytics";
+import { getWorkshop, workshopHasData, getAnalytics } from "@/services/workshops";
+import type { AnalyticsSnapshot } from "@/types";
 import { WorkshopOverviewContent } from "./WorkshopOverviewContent";
 
 export const metadata = { title: "Overview" };
@@ -16,10 +16,24 @@ export default async function WorkshopOverviewPage({
 
   const dataStatus = await workshopHasData(id);
 
-  if (workshop.status === "analyzed") {
-    const analytics = await computeAnalytics(id);
-    return <WorkshopOverviewContent workshop={workshop} analytics={analytics} hasData={true} />;
+  if (dataStatus.analysis) {
+    const analytics = (await getAnalytics(id)) as AnalyticsSnapshot | null;
+    return (
+      <WorkshopOverviewContent
+        workshop={workshop}
+        analytics={analytics}
+        hasData={!!analytics}
+        dataStatus={dataStatus}
+      />
+    );
   }
 
-  return <WorkshopOverviewContent workshop={workshop} analytics={null} hasData={false} />;
+  return (
+    <WorkshopOverviewContent
+      workshop={workshop}
+      analytics={null}
+      hasData={false}
+      dataStatus={dataStatus}
+    />
+  );
 }

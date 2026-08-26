@@ -32,15 +32,15 @@ export function KnowledgeGrowthSection({ analytics }: { analytics: AnalyticsSnap
       </div>
 
       <div className="rounded-2xl border border-border/60 bg-surface p-6">
-        <h3 className="text-sm font-semibold text-foreground">Identity & Confidence Growth</h3>
+        <h3 className="text-sm font-semibold text-foreground">Dimension Growth</h3>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div className="rounded-xl bg-primary/5 p-4 text-center">
-            <p className="text-2xl font-bold text-primary">+{analytics.identityGrowth}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Identity Understanding Growth</p>
+            <p className="text-2xl font-bold text-primary">+{analytics.learningGainIndex}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Average Learning Gain</p>
           </div>
           <div className="rounded-xl bg-teal-light p-4 text-center">
-            <p className="text-2xl font-bold text-teal">+{analytics.problemSolvingGrowth}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Problem Solving Growth</p>
+            <p className="text-2xl font-bold text-teal">+{analytics.misconceptionCorrectionIndex}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Misconception Correction</p>
           </div>
         </div>
       </div>

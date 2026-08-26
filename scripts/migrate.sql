@@ -6,23 +6,28 @@ CREATE TABLE IF NOT EXISTS workshops (
   date TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'draft',
-  pre_uploaded_at TIMESTAMPTZ,
-  post_uploaded_at TIMESTAMPTZ,
+  a_uploaded_at TIMESTAMPTZ,
+  b_uploaded_at TIMESTAMPTZ,
+  c_uploaded_at TIMESTAMPTZ,
   analyzed_at TIMESTAMPTZ,
-  pre_count INT NOT NULL DEFAULT 0,
-  post_count INT NOT NULL DEFAULT 0,
+  a_count INT NOT NULL DEFAULT 0,
+  b_count INT NOT NULL DEFAULT 0,
+  c_count INT NOT NULL DEFAULT 0,
   matched_count INT NOT NULL DEFAULT 0,
-  pre_data JSONB,
-  post_data JSONB,
+  form_a_data JSONB,
+  form_b_data JSONB,
+  form_c_data JSONB,
+  dimension_map JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS survey_responses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workshop_id TEXT NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  pre JSONB NOT NULL,
-  post JSONB NOT NULL
+  participant_id TEXT NOT NULL,
+  name TEXT,
+  answers JSONB NOT NULL,
+  UNIQUE(workshop_id, participant_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_survey_responses_workshop ON survey_responses(workshop_id);

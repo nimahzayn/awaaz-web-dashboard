@@ -15,7 +15,7 @@ export function InsightsEmptyState({ workshopId }: { workshopId: string }) {
         </div>
         <h3 className="text-lg font-semibold text-foreground">No analysis available</h3>
         <p className="mt-2 max-w-md mx-auto text-sm leading-relaxed text-muted-foreground">
-          Upload both Pre-Workshop and Post-Workshop surveys and generate analysis to view insights.
+          Upload Forms A, B, and C and generate analysis to view insights.
         </p>
         <Link
           href={`/workshops/${workshopId}/settings`}

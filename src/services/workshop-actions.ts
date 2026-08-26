@@ -1,335 +1,274 @@
 "use server";
 
 import * as XLSX from "xlsx";
-import type { SurveyResponse } from "@/types";
+import type { AnswerValue, DimensionMatch, Stage } from "@/types";
 import {
-  savePreData,
-  savePostData,
-  getPreData,
-  getPostData,
-  saveSurveyResponses,
+  normalizeHeader,
+  detectIdColumn,
+  extractQuestions,
+  matchDimensions,
+  parseAnswerValue,
+  isNumericValue,
+  detectScaleMax,
+  isNameColumn,
+} from "./question-matching";
+import {
+  saveFormData,
+  getFormData,
+  saveDimensionMap,
+  saveParticipantRecords,
   updateWorkshopStatus,
   workshopHasData,
   deleteWorkshop as deleteWorkshopFromStore,
-  saveAnalytics,
 } from "./workshops";
 
-type SheetRow = Record<string, string>;
+type SheetRow = Record<string, any>;
 
-function normalizeHeader(value: string): string {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
-}
-
-function normalizeRowKeys(row: Record<string, any>): Record<string, any> {
-  const normalized: Record<string, any> = {};
-  for (const [key, value] of Object.entries(row)) {
-    normalized[normalizeHeader(key)] = value;
-  }
-  return normalized;
-}
-
-function getCell(row: Record<string, any>, aliases: string[]): string {
-  for (const alias of aliases) {
-    const normalizedAlias = normalizeHeader(alias);
-    const value = row[normalizedAlias];
-    if (value !== undefined && value !== "") {
-      return String(value);
-    }
-  }
-  return "";
-}
-
-function parseList(value: string): string[] {
-  if (!value) return [];
-  return value.split(/[|;,]/).map((item) => item.trim()).filter(Boolean);
-}
-
-function toNumber(value: any): number {
-  if (value === undefined || value === null) return 0;
-  if (typeof value === "number") return value;
-  const str = String(value).trim();
-  if (!str) return 0;
-  const parsed = Number(str);
-  if (Number.isFinite(parsed)) return parsed;
-
-  const lower = str.toLowerCase();
-  if (lower.includes("strongly agree")) return 5;
-  if (lower.includes("strongly disagree")) return 1;
-  if (lower.includes("disagree")) return 2;
-  if (lower.includes("agree")) return 4;
-  if (lower.includes("neutral") || lower.includes("undecided") || lower.includes("maybe")) return 3;
-  if (lower.includes("deep and nuanced")) return 5;
-  if (lower.includes("good understanding") || lower.includes("good")) return 4;
-  if (lower.includes("basic understanding") || lower.includes("basic")) return 3;
-  if (lower.includes("little to no") || lower.includes("little")) return 2;
-  if (lower.includes("no understanding") || lower.includes("none") || lower.includes("never")) return 1;
-  if (lower.includes("very little understanding")) return 1;
-  if (lower.includes("developing understanding")) return 3;
-  if (lower.includes("excellent")) return 5;
-  if (lower.includes("very good")) return 4;
-  if (lower.includes("average")) return 3;
-  if (lower.includes("below average")) return 2;
-  if (lower.includes("poor")) return 1;
-
-  return 0;
-}
-
-function parseFileBuffer(buffer: Buffer): Record<string, any>[] {
+function parseFileBuffer(buffer: Buffer): { headers: Record<string, string>; rows: SheetRow[] } {
   const workbook = XLSX.read(buffer, { type: "buffer" });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) throw new Error("No sheet found in workbook.");
   const worksheet = workbook.Sheets[sheetName];
   if (!worksheet) throw new Error("Sheet is empty.");
-  const rows = XLSX.utils.sheet_to_json<any>(worksheet, { defval: "" });
-  return rows.map(normalizeRowKeys);
+
+  const matrix = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, defval: "" });
+  if (matrix.length === 0) throw new Error("Sheet is empty.");
+
+  const rawHeaders = (matrix[0] as any[]).map((h) => String(h ?? ""));
+  const headers: Record<string, string> = {};
+  for (const h of rawHeaders) {
+    const key = normalizeHeader(h);
+    if (key && !headers[key]) headers[key] = h;
+  }
+
+  const rows: SheetRow[] = [];
+  for (let i = 1; i < matrix.length; i++) {
+    const row: SheetRow = {};
+    let hasValue = false;
+    for (let j = 0; j < rawHeaders.length; j++) {
+      const key = normalizeHeader(rawHeaders[j]);
+      if (!key) continue;
+      const value = matrix[i][j];
+      row[key] = value;
+      if (value !== undefined && String(value).trim() !== "") hasValue = true;
+    }
+    if (hasValue) rows.push(row);
+  }
+
+  return { headers, rows };
 }
 
-function mergeDatasets(
-  preRows: Record<string, any>[],
-  postRows: Record<string, any>[]
-): { merged: SurveyResponse[]; matchedCount: number } {
-  const preIdKeys = [
-    "email", "mail", "fullname", "name",
-    "1fullnameasyoupreferonthecertificate", "fullnameasyoupreferonthecertificate",
-  ];
+async function uploadForm(
+  stage: Stage,
+  stageLabel: string,
+  workshopId: string,
+  formData: FormData
+) {
+  const file = formData.get("file") as File | null;
+  if (!file) return { success: false, error: "No file was provided." };
+  if (file.size === 0) return { success: false, error: "The uploaded file is empty." };
 
-  let preKey = "";
-  for (const key of preIdKeys) {
-    const normalized = normalizeHeader(key);
-    if (preRows.some((row) => row[normalized] !== undefined && String(row[normalized]).trim() !== "")) {
-      preKey = normalized;
-      break;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  let parsed: { headers: Record<string, string>; rows: SheetRow[] };
+  try {
+    parsed = parseFileBuffer(buffer);
+  } catch (e: any) {
+    return { success: false, error: `Failed to parse file: ${e.message}` };
+  }
+
+  if (parsed.rows.length === 0) return { success: false, error: "The sheet contains no data rows." };
+
+  const headerKeys = Object.keys(parsed.headers);
+  const idColumn = detectIdColumn(headerKeys, parsed.rows);
+  if (!idColumn) {
+    return { success: false, error: `Could not find an email or name column in the ${stageLabel} file.` };
+  }
+
+  await saveFormData(workshopId, stage, parsed.rows, parsed.headers);
+
+  const extra: Record<string, any> = {};
+  extra[`${stage}UploadedAt`] = new Date().toISOString();
+  extra[`${stage}Count`] = parsed.rows.length;
+  await updateWorkshopStatus(workshopId, "uploaded", extra as any);
+
+  await tryMerge(workshopId);
+
+  return { success: true, count: parsed.rows.length };
+}
+
+export async function uploadFormA(workshopId: string, formData: FormData) {
+  return uploadForm("a", "Form A", workshopId, formData);
+}
+
+export async function uploadFormB(workshopId: string, formData: FormData) {
+  return uploadForm("b", "Form B", workshopId, formData);
+}
+
+export async function uploadFormC(workshopId: string, formData: FormData) {
+  return uploadForm("c", "Form C", workshopId, formData);
+}
+
+interface ParticipantAnswers {
+  participantId: string;
+  name: string | null;
+  answers: { a: Record<string, AnswerValue>; b: Record<string, AnswerValue>; c: Record<string, AnswerValue> };
+}
+
+async function tryMerge(workshopId: string): Promise<{ matchedCount: number; dimensions: DimensionMatch[] } | null> {
+  const formA = await getFormData(workshopId, "a");
+  const formB = await getFormData(workshopId, "b");
+  const formC = await getFormData(workshopId, "c");
+  if (!formA || !formB || !formC) return null;
+
+  const keysA = Object.keys(formA.headers);
+  const keysB = Object.keys(formB.headers);
+  const keysC = Object.keys(formC.headers);
+
+  const idA = detectIdColumn(keysA, formA.rows);
+  const idB = detectIdColumn(keysB, formB.rows);
+  const idC = detectIdColumn(keysC, formC.rows);
+  if (!idA || !idB || !idC) return null;
+
+  const questionsA = extractQuestions(formA.headers, idA);
+  const questionsB = extractQuestions(formB.headers, idB);
+  const questionsC = extractQuestions(formC.headers, idC);
+  if (questionsA.length === 0 || questionsB.length === 0 || questionsC.length === 0) return null;
+
+  const dimensions = matchDimensions(questionsA, questionsB, questionsC);
+  if (dimensions.length === 0) return null;
+
+  const nameAHeader = keysA.find((k) => isNameColumn(k));
+  const nameBHeader = keysB.find((k) => isNameColumn(k));
+
+  const indexByStage = (
+    rows: SheetRow[],
+    idCol: string,
+    questionRefs: { key: string }[],
+    nameCol?: string
+  ) => {
+    const qKeys = new Set(questionRefs.map((q) => q.key));
+    const map = new Map<string, Record<string, AnswerValue>>();
+    const names = new Map<string, string | null>();
+    for (const row of rows) {
+      const pid = String(row[idCol] ?? "").trim().toLowerCase();
+      if (!pid) continue;
+      const answers: Record<string, AnswerValue> = {};
+      for (const key of Object.keys(row)) {
+        if (!qKeys.has(key)) continue;
+        answers[key] = parseAnswerValue(row[key]);
+      }
+      map.set(pid, answers);
+      names.set(pid, nameCol ? (String(row[nameCol] ?? "").trim() || null) : null);
     }
+    return { map, names };
+  };
+
+  const { map: answersAMap, names: namesA } = indexByStage(formA.rows, idA, questionsA, nameAHeader);
+  const { map: answersBMap, names: namesB } = indexByStage(formB.rows, idB, questionsB, nameBHeader);
+  const { map: answersCMap } = indexByStage(formC.rows, idC, questionsC);
+
+  const allIds = new Set<string>([...answersAMap.keys(), ...answersBMap.keys(), ...answersCMap.keys()]);
+  const records: ParticipantAnswers[] = [];
+
+  for (const pid of allIds) {
+    const a = answersAMap.get(pid);
+    const b = answersBMap.get(pid);
+    const c = answersCMap.get(pid);
+    if (!a || !b || !c) continue;
+
+    const rawName =
+      (nameAHeader ? namesA.get(pid) ?? "" : "") ||
+      (nameBHeader ? namesB.get(pid) ?? "" : "");
+
+    records.push({
+      participantId: pid,
+      name: rawName || null,
+      answers: { a, b, c },
+    });
   }
 
-  let postKey = "";
-  for (const key of preIdKeys) {
-    const normalized = normalizeHeader(key);
-    if (postRows.some((row) => row[normalized] !== undefined && String(row[normalized]).trim() !== "")) {
-      postKey = normalized;
-      break;
-    }
+  if (records.length === 0) return null;
+
+  normalizeScales(records, dimensions);
+
+  await saveDimensionMap(workshopId, dimensions);
+  await saveParticipantRecords(workshopId, records);
+  await updateWorkshopStatus(workshopId, "uploaded", { matchedCount: records.length });
+
+  return { matchedCount: records.length, dimensions };
+}
+
+function normalizeScales(
+  records: ParticipantAnswers[],
+  dimensions: DimensionMatch[]
+) {
+  const questionKeys = new Set<string>();
+  for (const d of dimensions) {
+    questionKeys.add(d.a.key);
+    questionKeys.add(d.b.key);
+    questionKeys.add(d.c.key);
   }
 
-  if (!preKey || !postKey) {
-    throw new Error("Could not find an email or name column to identify participants in both sheets.");
-  }
-
-  const preMap = new Map<string, Record<string, any>>();
-  for (const row of preRows) {
-    const id = String(row[preKey] || "").trim().toLowerCase();
-    if (id) preMap.set(id, row);
-  }
-
-  const merged: SurveyResponse[] = [];
-  let matchedCount = 0;
-
-  for (const postRow of postRows) {
-    const id = String(postRow[postKey] || "").trim().toLowerCase();
-    if (!id) continue;
-
-    const preRow = preMap.get(id);
-    if (!preRow) continue;
-
-    matchedCount += 1;
-
-    let leadership = toNumber(getCell(postRow, ["leadership"]));
-    let criticalThinking = toNumber(getCell(postRow, ["criticalthinking"]));
-    let empathy = toNumber(getCell(postRow, ["empathy"]));
-    let problemSolving = toNumber(getCell(postRow, ["problemsolving"]));
-    let communication = toNumber(getCell(postRow, ["communication"]));
-    let justiceUnderstanding = toNumber(getCell(postRow, ["justiceunderstanding"]));
-
-    const q16Aliases = ["16whichofthefollowingdoyoufeelyoudevelopedthroughthisworkshop", "q16", "developedskills"];
-    const q16Value = getCell(postRow, q16Aliases).toLowerCase();
-    if (q16Value) {
-      if (leadership === 0 && (q16Value.includes("leadership") || q16Value.includes("innovation"))) leadership = 5;
-      if (criticalThinking === 0 && (q16Value.includes("critical thinking") || q16Value.includes("criticalthinking") || q16Value.includes("creative"))) criticalThinking = 5;
-      if (empathy === 0 && (q16Value.includes("empathy") || q16Value.includes("community"))) empathy = 5;
-      if (problemSolving === 0 && (q16Value.includes("problem solving") || q16Value.includes("problemsolving") || q16Value.includes("problem-solving"))) problemSolving = 5;
-      if (communication === 0 && (q16Value.includes("communication") || q16Value.includes("collaboration") || q16Value.includes("teamwork"))) communication = 5;
-      if (justiceUnderstanding === 0 && (q16Value.includes("justice understanding") || q16Value.includes("justice") || q16Value.includes("legal"))) justiceUnderstanding = 5;
-    }
-
-    let facilitatorRating = toNumber(getCell(postRow, ["facilitatorrating"]));
-    if (facilitatorRating === 0) {
-      const gauri = toNumber(getCell(postRow, ["27howhelpfulandsupportivewerethefacilitatorsgauri15scale", "gauri"]));
-      const vaishnavi = toNumber(getCell(postRow, ["271howhelpfulandsupportivewerethefacilitatorsvaishnavi15scale", "vaishnavi"]));
-      const rohit = toNumber(getCell(postRow, ["272howhelpfulandsupportivewerethefacilitatorsrohit15scale", "rohit"]));
-      const ratings = [gauri, vaishnavi, rohit].filter((r) => r > 0);
-      if (ratings.length > 0) {
-        facilitatorRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+  for (const stage of ["a", "b", "c"] as const) {
+    for (const qKey of questionKeys) {
+      const values: number[] = [];
+      for (const r of records) {
+        const v = r.answers[stage][qKey];
+        if (isNumericValue(v)) values.push(v);
+      }
+      if (values.length === 0) continue;
+      const scaleMax = detectScaleMax(values);
+      if (scaleMax === 5) continue;
+      const factor = 5 / scaleMax;
+      for (const r of records) {
+        const v = r.answers[stage][qKey];
+        if (isNumericValue(v)) r.answers[stage][qKey] = Math.round(v * factor * 10) / 10;
       }
     }
-
-    merged.push({
-      email: id,
-      pre: {
-        q5: {
-          caste: toNumber(getCell(preRow, ["5howwouldyourateyourunderstandingofthefollowingidentitiescaste"])),
-          gender: toNumber(getCell(preRow, ["5howwouldyourateyourunderstandingofthefollowingidentitiesgender"])),
-          religion: toNumber(getCell(preRow, ["5howwouldyourateyourunderstandingofthefollowingidentitiesreligion"])),
-        },
-        q7: toNumber(getCell(preRow, ["7howeffectivedoyouthinkhandsonactivitybasedmethodscreativepedagogiesareincomparisontotraditionallecturebasedteaching"])),
-        q8: toNumber(getCell(preRow, ["8howconfidentareyouinyourproblemsolvingskillsincludingyourabilitytoidentifyanalyseandresolvechallengesusingcriticalthinkingcreativityandlogicalreasoning"])),
-        q11: toNumber(getCell(preRow, ["11howwillyoumarkyourlevelofsensitivitytocitizensissuesbeforeji1011low5high"])),
-      },
-      post: {
-        q12: toNumber(getCell(postRow, ["12howwillyoumarkyourlevelofsensitivitytocitizensissuesafterji101"])),
-        q14: {
-          caste: toNumber(getCell(postRow, ["14howwouldyourateyourunderstandingofthefollowingidentitiesbeforeji101caste"])),
-          gender: toNumber(getCell(postRow, ["14howwouldyourateyourunderstandingofthefollowingidentitiesbeforeji101gender"])),
-          religion: toNumber(getCell(postRow, ["14howwouldyourateyourunderstandingofthefollowingidentitiesbeforeji101religion"])),
-        },
-        q15: {
-          caste: toNumber(getCell(postRow, ["15howwouldyourateyourunderstandingofthefollowingidentitiesafterji101caste"])),
-          gender: toNumber(getCell(postRow, ["15howwouldyourateyourunderstandingofthefollowingidentitiesafterji101gender"])),
-          religion: toNumber(getCell(postRow, ["15howwouldyourateyourunderstandingofthefollowingidentitiesafterji101religion"])),
-        },
-        q18: toNumber(getCell(postRow, ["18towhatextenddidyouagreewiththestatementbeforetheworkshopthehandsonandactivitybasedmethodscreativepedagogiesweremoreeffectivethantraditionallectures"])),
-        q19: toNumber(getCell(postRow, ["19towhatextenddoyouagreewiththestatementaftertheworkshopthehandsonandactivitybasedmethodscreativepedagogiesweremoreeffectivethantraditionallectures"])),
-        q21: toNumber(getCell(postRow, ["21howconfidentwereyoubeforetheworkshopinyourproblemsolvingskillsincludingyourabilitytoidentifyanalyseandresolvechallengesusingcriticalthinkingcreativityandlogicalreasoning"])),
-        q22: toNumber(getCell(postRow, ["22howconfidentareyounowaftertheworkshopinyourproblemsolvingskillsincludingyourabilitytoidentifyanalyseandresolvechallengesusingcriticalthinkingcreativityandlogicalreasoning"])),
-        ideasHeard: toNumber(getCell(postRow, ["6towhatdegreedoyouagreewiththestatementifeltmyideaswereheardandconsideredbytheteam"])),
-        respect: toNumber(getCell(postRow, ["6towhatdegreedoyouagreewiththestatementourteamrespectedandvalueddiverseperspectives"])),
-        teamPreference: toNumber(getCell(postRow, ["6towhatdegreedoyouagreewiththestatementiwouldprefertodothisindividuallyratherthaninateam"])),
-        strengths: parseList(getCell(postRow, ["7strengthsyourteamhadinworkingtogether"])),
-        challenges: parseList(getCell(postRow, ["9whatwasonechallengeyourteamfacedhowdidyouworkthroughit"])),
-        teamValues: parseList(getCell(postRow, ["10wereyourteamvaluesviolatedatanypointintime"])),
-        visioningExercise: parseList(getCell(postRow, ["101doyouthinkvisioningexercisehelptheteamtounderstandwhatisteamsgoalbeforeidentifyingproblemstatement"])),
-        clayActivity: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectiveclaybasedactivity"])),
-        sixW2h: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectiveproblemsolving6w2h"])),
-        riverOfLife: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectivedrawingbasedactivityriveroflife"])),
-        aiActivity: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectiveaibasedactivity"])),
-        gameActivity: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectivegamebasedactivitybingocheerstoconstitution"])),
-        laptopActivity: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectivelaptopbasedactivity"])),
-        fieldActivity: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectivefieldactivity"])),
-        feelingsChart: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectivefeelingschartactivity"])),
-        caseStudy: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectivecasestudyreadingactivity"])),
-        interventionPlanning: toNumber(getCell(postRow, ["20whichactivitydoyouthinkwasthemosteffectiveinthisshift5beingmosteffectiveand1beingleasteffectiveinterventionplanning"])),
-        facilitatorRating,
-        safeLearningEnvironment: toNumber(getCell(postRow, ["28thefacilitatorscreatedasafeandengaginglearningenvironment"])),
-        clearInstructions: toNumber(getCell(postRow, ["29instructionswerelargelyeasytofollownotconfusing"])),
-        leadership,
-        criticalThinking,
-        empathy,
-        problemSolving,
-        communication,
-        justiceUnderstanding,
-        overallSatisfaction: toNumber(getCell(postRow, ["24onascaleof15howwouldyourateyouroverallexperienceofjusticeinnovation101"])),
-        suggestions: parseList(getCell(postRow, ["30whatchangeswouldyourecommendtoanyofthefacilitatorsapproachorstylepleasefeelfreetowrite"])),
-      },
-    } as SurveyResponse);
   }
-
-  return { merged, matchedCount };
-}
-
-export async function uploadPreWorkshop(workshopId: string, formData: FormData) {
-  const file = formData.get("file") as File | null;
-  if (!file) return { success: false, error: "No file was provided." };
-  if (file.size === 0) return { success: false, error: "The uploaded file is empty." };
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  let rows: Record<string, any>[];
-  try {
-    rows = parseFileBuffer(buffer);
-  } catch (e: any) {
-    return { success: false, error: `Failed to parse file: ${e.message}` };
-  }
-
-  if (rows.length === 0) return { success: false, error: "The sheet contains no data rows." };
-
-  const preIdKeys = ["email", "mail", "fullname", "name", "1fullnameasyoupreferonthecertificate", "fullnameasyoupreferonthecertificate"];
-  let preKey = "";
-  for (const key of preIdKeys) {
-    const normalized = normalizeHeader(key);
-    if (rows.some((row) => row[normalized] !== undefined && String(row[normalized]).trim() !== "")) {
-      preKey = normalized;
-      break;
-    }
-  }
-  if (!preKey) {
-    return { success: false, error: "Could not find an email or name column to identify participants." };
-  }
-
-  await savePreData(workshopId, rows);
-  await updateWorkshopStatus(workshopId, "uploaded", {
-    preUploadedAt: new Date().toISOString(),
-    preCount: rows.length,
-  });
-
-  await tryMerge(workshopId);
-
-  return { success: true, count: rows.length };
-}
-
-export async function uploadPostWorkshop(workshopId: string, formData: FormData) {
-  const file = formData.get("file") as File | null;
-  if (!file) return { success: false, error: "No file was provided." };
-  if (file.size === 0) return { success: false, error: "The uploaded file is empty." };
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  let rows: Record<string, any>[];
-  try {
-    rows = parseFileBuffer(buffer);
-  } catch (e: any) {
-    return { success: false, error: `Failed to parse file: ${e.message}` };
-  }
-
-  if (rows.length === 0) return { success: false, error: "The sheet contains no data rows." };
-
-  const preIdKeys = ["email", "mail", "fullname", "name", "1fullnameasyoupreferonthecertificate", "fullnameasyoupreferonthecertificate"];
-  let postKey = "";
-  for (const key of preIdKeys) {
-    const normalized = normalizeHeader(key);
-    if (rows.some((row) => row[normalized] !== undefined && String(row[normalized]).trim() !== "")) {
-      postKey = normalized;
-      break;
-    }
-  }
-  if (!postKey) {
-    return { success: false, error: "Could not find an email or name column to identify participants." };
-  }
-
-  await savePostData(workshopId, rows);
-  await updateWorkshopStatus(workshopId, "uploaded", {
-    postUploadedAt: new Date().toISOString(),
-    postCount: rows.length,
-  });
-
-  await tryMerge(workshopId);
-
-  return { success: true, count: rows.length };
-}
-
-async function tryMerge(workshopId: string) {
-  const pre = await getPreData(workshopId);
-  const post = await getPostData(workshopId);
-  if (!pre || !post) return;
-
-  const { merged, matchedCount } = mergeDatasets(pre, post);
-  await saveSurveyResponses(workshopId, merged);
-  await updateWorkshopStatus(workshopId, "uploaded", { matchedCount });
 }
 
 export async function generateAnalysis(workshopId: string) {
   const status = await workshopHasData(workshopId);
-  if (!status.pre || !status.post) {
-    return { success: false, error: "Both pre and post workshop surveys must be uploaded first." };
+  if (!status.a || !status.b || !status.c) {
+    return { success: false, error: "All three forms (A, B, and C) must be uploaded first." };
   }
 
-  await tryMerge(workshopId);
+  try {
+    const mergeResult = await tryMerge(workshopId);
+    if (!mergeResult) {
+      return {
+        success: false,
+        error:
+          "Could not match participants and questions across the three forms. Check that the same participants appear in each file and that the questions correspond.",
+      };
+    }
 
-  const { computeAnalytics } = await import("./analytics");
-  const analytics = await computeAnalytics(workshopId);
-  await saveAnalytics(workshopId, analytics);
-  await updateWorkshopStatus(workshopId, "analyzed", { analyzedAt: new Date().toISOString() });
+    const { computeAnalytics } = await import("./analytics");
+    const analytics = await computeAnalytics(workshopId);
+    const { saveAnalytics } = await import("./workshops");
+    await saveAnalytics(workshopId, analytics);
+    await updateWorkshopStatus(workshopId, "analyzed", {
+      analyzedAt: new Date().toISOString(),
+    });
 
-  return { success: true };
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("generateAnalysis failed:", err);
+    return { success: false, error: `Analysis generation failed: ${message}` };
+  }
 }
 
 export async function deleteWorkshop(workshopId: string) {
   await deleteWorkshopFromStore(workshopId);
   return { success: true };
+}
+
+export async function parseSheetData(base64Content: string) {
+  try {
+    return parseFileBuffer(Buffer.from(base64Content, "base64"));
+  } catch (e: any) {
+    throw new Error(`Failed to parse file: ${e?.message ?? e}`);
+  }
 }

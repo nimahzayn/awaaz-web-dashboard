@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { getWorkshop, workshopHasData } from "@/services/workshops";
-import { computeAnalytics } from "@/services/analytics";
+import { getWorkshop, workshopHasData, getAnalytics } from "@/services/workshops";
+import type { AnalyticsSnapshot } from "@/types";
 import { InsightsEmptyState } from "./InsightsEmptyState";
 import { InsightsContent } from "./InsightsContent";
 
@@ -20,6 +20,10 @@ export default async function InsightsPage({
     return <InsightsEmptyState workshopId={id} />;
   }
 
-  const analytics = await computeAnalytics(id);
+  const analytics = (await getAnalytics(id)) as AnalyticsSnapshot | null;
+  if (!analytics) {
+    return <InsightsEmptyState workshopId={id} />;
+  }
+
   return <InsightsContent workshop={workshop} analytics={analytics} />;
 }

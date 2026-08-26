@@ -3,7 +3,8 @@
 import type { AnalyticsSnapshot } from "@/types";
 
 export function SentimentSection({ analytics }: { analytics: AnalyticsSnapshot }) {
-  const tc = analytics.teamCollaboration;
+  const tc = analytics.collaboration;
+  const facilitator = analytics.facilitator;
 
   return (
     <section className="space-y-6">
@@ -15,45 +16,65 @@ export function SentimentSection({ analytics }: { analytics: AnalyticsSnapshot }
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border/60 bg-surface p-6">
-          <p className="text-xs text-muted-foreground">Ideas Heard</p>
-          <p className="mt-2 text-2xl font-bold text-foreground">{tc.ideasHeard}/5</p>
-        </div>
-        <div className="rounded-2xl border border-border/60 bg-surface p-6">
-          <p className="text-xs text-muted-foreground">Respect for Diverse Perspectives</p>
-          <p className="mt-2 text-2xl font-bold text-foreground">{tc.respect}/5</p>
-        </div>
-        <div className="rounded-2xl border border-border/60 bg-surface p-6">
-          <p className="text-xs text-muted-foreground">Team Preference</p>
-          <p className="mt-2 text-2xl font-bold text-foreground">{tc.teamPreference}/5</p>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border/60 bg-surface p-6">
-          <p className="text-xs text-muted-foreground">Facilitator Rating</p>
-          <p className="mt-2 text-2xl font-bold text-foreground">{analytics.facilitator.averageRating}/5</p>
-          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-            <span>Safe Environment: {analytics.facilitator.safeEnvironment}/5</span>
-            <span>Clear Instructions: {analytics.facilitator.clearInstructions}/5</span>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-border/60 bg-surface p-6">
-          <p className="text-xs text-muted-foreground">Overall Satisfaction</p>
-          <p className="mt-2 text-2xl font-bold text-foreground">{analytics.overallSatisfaction}/5</p>
-          <div className="mt-2">
-            <div className="h-3 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${(analytics.overallSatisfaction / 5) * 100}%` }}
-              />
+      {tc && (tc.ideasHeard !== null || tc.respect !== null || tc.teamPreference !== null) && (
+        <div className={`grid gap-4 ${tc.ideasHeard !== null && tc.respect !== null && tc.teamPreference !== null ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          {tc.ideasHeard !== null && (
+            <div className="rounded-2xl border border-border/60 bg-surface p-6">
+              <p className="text-xs text-muted-foreground">Ideas Heard</p>
+              <p className="mt-2 text-2xl font-bold text-foreground">{tc.ideasHeard.toFixed(1)}/5</p>
             </div>
-          </div>
+          )}
+          {tc.respect !== null && (
+            <div className="rounded-2xl border border-border/60 bg-surface p-6">
+              <p className="text-xs text-muted-foreground">Respect for Diverse Perspectives</p>
+              <p className="mt-2 text-2xl font-bold text-foreground">{tc.respect.toFixed(1)}/5</p>
+            </div>
+          )}
+          {tc.teamPreference !== null && (
+            <div className="rounded-2xl border border-border/60 bg-surface p-6">
+              <p className="text-xs text-muted-foreground">Team Preference</p>
+              <p className="mt-2 text-2xl font-bold text-foreground">{tc.teamPreference.toFixed(1)}/5</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      {tc.strengths.length > 0 && (
+      {(facilitator || analytics.overallSatisfaction !== null) && (
+        <div className={`grid gap-4 ${facilitator && analytics.overallSatisfaction !== null ? "sm:grid-cols-2" : ""}`}>
+          {facilitator && (
+            <div className="rounded-2xl border border-border/60 bg-surface p-6">
+              <p className="text-xs text-muted-foreground">Facilitator Rating</p>
+              {facilitator.averageRating !== null ? (
+                <p className="mt-2 text-2xl font-bold text-foreground">{facilitator.averageRating.toFixed(1)}/5</p>
+              ) : (
+                <p className="mt-2 text-2xl font-bold text-muted-foreground">—</p>
+              )}
+              {(facilitator.safeEnvironment !== null || facilitator.clearInstructions !== null) && (
+                <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                  {facilitator.safeEnvironment !== null && <span>Safe Environment: {facilitator.safeEnvironment.toFixed(1)}/5</span>}
+                  {facilitator.clearInstructions !== null && <span>Clear Instructions: {facilitator.clearInstructions.toFixed(1)}/5</span>}
+                </div>
+              )}
+            </div>
+          )}
+          {analytics.overallSatisfaction !== null && (
+            <div className="rounded-2xl border border-border/60 bg-surface p-6">
+              <p className="text-xs text-muted-foreground">Overall Satisfaction</p>
+              <p className="mt-2 text-2xl font-bold text-foreground">{analytics.overallSatisfaction.toFixed(1)}/5</p>
+              <div className="mt-2">
+                <div className="h-3 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${(analytics.overallSatisfaction / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tc && tc.strengths.length > 0 && (
         <div className="rounded-2xl border border-border/60 bg-surface p-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Team Strengths</p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -66,7 +87,7 @@ export function SentimentSection({ analytics }: { analytics: AnalyticsSnapshot }
         </div>
       )}
 
-      {tc.challenges.length > 0 && (
+      {tc && tc.challenges.length > 0 && (
         <div className="rounded-2xl border border-border/60 bg-surface p-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Team Challenges</p>
           <div className="mt-3 flex flex-wrap gap-2">

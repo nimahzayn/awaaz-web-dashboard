@@ -14,7 +14,7 @@ import {
 } from "recharts";
 
 export function LearningJourneySection({ analytics }: { analytics: AnalyticsSnapshot }) {
-  const allTopics = [...analytics.identityTopics, analytics.creativePedagogy, analytics.problemSolving];
+  const allTopics = analytics.dimensions;
   const avgA = allTopics.reduce((s, t) => s + t.a, 0) / allTopics.length;
   const avgB = allTopics.reduce((s, t) => s + t.b, 0) / allTopics.length;
   const avgC = allTopics.reduce((s, t) => s + t.c, 0) / allTopics.length;

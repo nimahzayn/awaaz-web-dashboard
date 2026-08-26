@@ -72,11 +72,13 @@ export async function updateWorkshopStatus(
   const values: any[] = [status];
   let idx = 2;
 
-  if (extra?.preUploadedAt !== undefined) { sets.push(`pre_uploaded_at = $${idx++}`); values.push(extra.preUploadedAt); }
-  if (extra?.postUploadedAt !== undefined) { sets.push(`post_uploaded_at = $${idx++}`); values.push(extra.postUploadedAt); }
+  if (extra?.aUploadedAt !== undefined) { sets.push(`a_uploaded_at = $${idx++}`); values.push(extra.aUploadedAt); }
+  if (extra?.bUploadedAt !== undefined) { sets.push(`b_uploaded_at = $${idx++}`); values.push(extra.bUploadedAt); }
+  if (extra?.cUploadedAt !== undefined) { sets.push(`c_uploaded_at = $${idx++}`); values.push(extra.cUploadedAt); }
   if (extra?.analyzedAt !== undefined) { sets.push(`analyzed_at = $${idx++}`); values.push(extra.analyzedAt); }
-  if (extra?.preCount !== undefined) { sets.push(`pre_count = $${idx++}`); values.push(extra.preCount); }
-  if (extra?.postCount !== undefined) { sets.push(`post_count = $${idx++}`); values.push(extra.postCount); }
+  if (extra?.aCount !== undefined) { sets.push(`a_count = $${idx++}`); values.push(extra.aCount); }
+  if (extra?.bCount !== undefined) { sets.push(`b_count = $${idx++}`); values.push(extra.bCount); }
+  if (extra?.cCount !== undefined) { sets.push(`c_count = $${idx++}`); values.push(extra.cCount); }
   if (extra?.matchedCount !== undefined) { sets.push(`matched_count = $${idx++}`); values.push(extra.matchedCount); }
 
   values.push(id);
@@ -86,42 +88,52 @@ export async function updateWorkshopStatus(
   );
 }
 
-export async function savePreData(id: string, data: Record<string, any>[]): Promise<void> {
-  await sql`UPDATE workshops SET pre_data = ${JSON.stringify(data)}::jsonb WHERE id = ${id}`;
+function stageColumn(stage: "a" | "b" | "c"): string {
+  return `form_${stage}_data`;
 }
 
-export async function savePostData(id: string, data: Record<string, any>[]): Promise<void> {
-  await sql`UPDATE workshops SET post_data = ${JSON.stringify(data)}::jsonb WHERE id = ${id}`;
+export async function saveFormData(id: string, stage: "a" | "b" | "c", data: Record<string, any>[], headers: Record<string, string>): Promise<void> {
+  const col = stageColumn(stage);
+  const payload = JSON.stringify({ headers, rows: data });
+  await sql.query(`UPDATE workshops SET ${col} = $1::jsonb WHERE id = $2`, [payload, id]);
 }
 
-export async function getPreData(id: string): Promise<Record<string, any>[] | null> {
-  const rows = await sql`SELECT pre_data FROM workshops WHERE id = ${id}`;
-  if (!rows[0]?.pre_data) return null;
-  return typeof rows[0].pre_data === "string" ? JSON.parse(rows[0].pre_data) : rows[0].pre_data;
+async function getFormDataRaw(id: string, stage: "a" | "b" | "c"): Promise<{ headers: Record<string, string>; rows: Record<string, any>[] } | null> {
+  const col = stageColumn(stage);
+  const result = await sql.query(`SELECT ${col} AS data FROM workshops WHERE id = $1`, [id]);
+  const rows = (result as any).rows ?? result;
+  if (!rows[0]?.data) return null;
+  const parsed = typeof rows[0].data === "string" ? JSON.parse(rows[0].data) : rows[0].data;
+  return { headers: parsed.headers ?? {}, rows: parsed.rows ?? [] };
 }
 
-export async function getPostData(id: string): Promise<Record<string, any>[] | null> {
-  const rows = await sql`SELECT post_data FROM workshops WHERE id = ${id}`;
-  if (!rows[0]?.post_data) return null;
-  return typeof rows[0].post_data === "string" ? JSON.parse(rows[0].post_data) : rows[0].post_data;
+export async function saveDimensionMap(id: string, dimensions: any[]): Promise<void> {
+  await sql.query(`UPDATE workshops SET dimension_map = $1::jsonb WHERE id = $2`, [JSON.stringify(dimensions), id]);
 }
 
-export async function saveSurveyResponses(id: string, responses: any[]): Promise<void> {
+export async function getDimensionMap(id: string): Promise<any[] | null> {
+  const rows = await sql`SELECT dimension_map FROM workshops WHERE id = ${id}`;
+  if (!rows[0]?.dimension_map) return null;
+  return typeof rows[0].dimension_map === "string" ? JSON.parse(rows[0].dimension_map) : rows[0].dimension_map;
+}
+
+export async function saveParticipantRecords(id: string, records: Array<{ participantId: string; name: string | null; answers: any }>): Promise<void> {
   await sql`DELETE FROM survey_responses WHERE workshop_id = ${id}`;
-  for (const r of responses) {
+  for (const r of records) {
     await sql`
-      INSERT INTO survey_responses (workshop_id, email, pre, post)
-      VALUES (${id}, ${r.email}, ${JSON.stringify(r.pre)}::jsonb, ${JSON.stringify(r.post)}::jsonb)
+      INSERT INTO survey_responses (workshop_id, participant_id, name, answers)
+      VALUES (${id}, ${r.participantId}, ${r.name}, ${JSON.stringify(r.answers)}::jsonb)
+      ON CONFLICT (workshop_id, participant_id) DO UPDATE SET answers = ${JSON.stringify(r.answers)}::jsonb
     `;
   }
 }
 
-export async function getSurveyResponses(id: string): Promise<any[]> {
-  const rows = await sql`SELECT email, pre, post FROM survey_responses WHERE workshop_id = ${id}`;
+export async function getParticipantRecords(id: string): Promise<Array<{ participantId: string; name: string | null; answers: any }>> {
+  const rows = await sql`SELECT participant_id, name, answers FROM survey_responses WHERE workshop_id = ${id}`;
   return rows.map((r) => ({
-    email: r.email,
-    pre: typeof r.pre === "string" ? JSON.parse(r.pre) : r.pre,
-    post: typeof r.post === "string" ? JSON.parse(r.post) : r.post,
+    participantId: r.participant_id,
+    name: r.name ?? null,
+    answers: typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers,
   }));
 }
 
@@ -139,29 +151,37 @@ export async function getAnalytics(id: string): Promise<any | null> {
   return typeof rows[0].data === "string" ? JSON.parse(rows[0].data) : rows[0].data;
 }
 
+export async function getFormData(id: string, stage: "a" | "b" | "c") {
+  return getFormDataRaw(id, stage);
+}
+
 export async function workshopHasData(id: string): Promise<{
-  pre: boolean;
-  post: boolean;
+  a: boolean;
+  b: boolean;
+  c: boolean;
   analysis: boolean;
-  preCount: number;
-  postCount: number;
+  aCount: number;
+  bCount: number;
+  cCount: number;
   matchedCount: number;
 }> {
   const rows = await sql`
-    SELECT pre_count, post_count, matched_count, pre_data, post_data,
+    SELECT a_count, b_count, c_count, matched_count, form_a_data, form_b_data, form_c_data,
            EXISTS(SELECT 1 FROM workshop_analytics WHERE workshop_id = ${id}) AS analysis
     FROM workshops WHERE id = ${id}
   `;
   if (!rows[0]) {
-    return { pre: false, post: false, analysis: false, preCount: 0, postCount: 0, matchedCount: 0 };
+    return { a: false, b: false, c: false, analysis: false, aCount: 0, bCount: 0, cCount: 0, matchedCount: 0 };
   }
   const r = rows[0];
   return {
-    pre: !!r.pre_data,
-    post: !!r.post_data,
+    a: !!r.form_a_data,
+    b: !!r.form_b_data,
+    c: !!r.form_c_data,
     analysis: !!r.analysis,
-    preCount: r.pre_count ?? 0,
-    postCount: r.post_count ?? 0,
+    aCount: r.a_count ?? 0,
+    bCount: r.b_count ?? 0,
+    cCount: r.c_count ?? 0,
     matchedCount: r.matched_count ?? 0,
   };
 }
@@ -175,11 +195,13 @@ function rowToWorkshop(row: any): Workshop {
     date: row.date,
     description: row.description ?? "",
     status: row.status,
-    preUploadedAt: row.pre_uploaded_at ?? null,
-    postUploadedAt: row.post_uploaded_at ?? null,
+    aUploadedAt: row.a_uploaded_at ?? null,
+    bUploadedAt: row.b_uploaded_at ?? null,
+    cUploadedAt: row.c_uploaded_at ?? null,
     analyzedAt: row.analyzed_at ?? null,
-    preCount: row.pre_count ?? 0,
-    postCount: row.post_count ?? 0,
+    aCount: row.a_count ?? 0,
+    bCount: row.b_count ?? 0,
+    cCount: row.c_count ?? 0,
     matchedCount: row.matched_count ?? 0,
     createdAt: row.created_at?.toISOString?.() ?? row.created_at ?? new Date().toISOString(),
   };

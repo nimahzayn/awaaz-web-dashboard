@@ -2,20 +2,41 @@
 
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
-import type { SurveyResponse } from "@/types";
+import type { DimensionMatch, ParticipantRecord } from "@/types";
 
 interface ParticipantsContentProps {
   workshopId: string;
-  responses: SurveyResponse[];
+  responses: ParticipantRecord[];
+  dimensions: DimensionMatch[];
 }
 
-export function ParticipantsContent({ workshopId, responses }: ParticipantsContentProps) {
+function stageAverage(
+  record: ParticipantRecord,
+  stage: "a" | "b" | "c",
+  dimensions: DimensionMatch[]
+): number | null {
+  const keyForStage = (d: DimensionMatch) =>
+    stage === "a" ? d.a.key : stage === "b" ? d.b.key : d.c.key;
+
+  const values: number[] = [];
+  for (const dim of dimensions) {
+    const v = record.answers[stage]?.[keyForStage(dim)];
+    if (typeof v === "number") values.push(v);
+  }
+  if (values.length === 0) return null;
+  return values.reduce((s, v) => s + v, 0) / values.length;
+}
+
+export function ParticipantsContent({ responses, dimensions }: ParticipantsContentProps) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     if (!search) return responses;
     const q = search.toLowerCase();
-    return responses.filter((r) => (r.email || "").toLowerCase().includes(q));
+    return responses.filter((r) => {
+      const label = r.name || r.participantId;
+      return label.toLowerCase().includes(q);
+    });
   }, [responses, search]);
 
   return (
@@ -25,7 +46,7 @@ export function ParticipantsContent({ workshopId, responses }: ParticipantsConte
           Participants
         </h1>
         <p className="text-sm text-muted-foreground">
-          {responses.length} matched participants across pre and post workshops.
+          {responses.length} matched participants across Forms A, B, and C.
         </p>
       </div>
 
@@ -42,21 +63,23 @@ export function ParticipantsContent({ workshopId, responses }: ParticipantsConte
 
       <div className="space-y-2">
         {filtered.map((r, i) => {
-          const preAvg = (r.pre.q5.caste + r.pre.q5.gender + r.pre.q5.religion) / 3;
-          const postAvg = (r.post.q15.caste + r.post.q15.gender + r.post.q15.religion) / 3;
-          const growth = postAvg - preAvg;
+          const aAvg = stageAverage(r, "a", dimensions);
+          const bAvg = stageAverage(r, "b", dimensions);
+          const cAvg = stageAverage(r, "c", dimensions);
+          if (aAvg === null || bAvg === null || cAvg === null) return null;
+          const growth = cAvg - aAvg;
 
           return (
-            <div key={r.email || i} className="rounded-xl border border-border/40 bg-surface p-4">
+            <div key={r.participantId || i} className="rounded-xl border border-border/40 bg-surface p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-foreground">{r.email}</p>
+                  <p className="text-sm font-medium text-foreground">{r.name || r.participantId}</p>
                   <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>A: {preAvg.toFixed(1)}</span>
+                    <span>A: {aAvg.toFixed(1)}</span>
                     <span>→</span>
-                    <span>B: {((r.post.q14.caste + r.post.q14.gender + r.post.q14.religion) / 3).toFixed(1)}</span>
+                    <span>B: {bAvg.toFixed(1)}</span>
                     <span>→</span>
-                    <span className="font-medium text-foreground">C: {postAvg.toFixed(1)}</span>
+                    <span className="font-medium text-foreground">C: {cAvg.toFixed(1)}</span>
                   </div>
                 </div>
                 <div className="text-right">

@@ -1,5 +1,20 @@
 export type WorkshopStatus = "draft" | "uploaded" | "analyzed";
 
+export type Stage = "a" | "b" | "c";
+
+export interface QuestionRef {
+  key: string;
+  text: string;
+}
+
+export interface DimensionMatch {
+  id: string;
+  name: string;
+  a: QuestionRef;
+  b: QuestionRef;
+  c: QuestionRef;
+}
+
 export interface Workshop {
   id: string;
   name: string;
@@ -8,11 +23,13 @@ export interface Workshop {
   date: string;
   description: string;
   status: WorkshopStatus;
-  preUploadedAt: string | null;
-  postUploadedAt: string | null;
+  aUploadedAt: string | null;
+  bUploadedAt: string | null;
+  cUploadedAt: string | null;
   analyzedAt: string | null;
-  preCount: number;
-  postCount: number;
+  aCount: number;
+  bCount: number;
+  cCount: number;
   matchedCount: number;
   createdAt: string;
 }
@@ -97,50 +114,15 @@ export interface ABCStage {
   value: number;
 }
 
-export interface SurveyResponse {
-  email: string;
-  pre: {
-    q5: Record<string, number>;
-    q7: number;
-    q8: number;
-    q11: number;
-  };
-  post: {
-    q12: number;
-    q14: Record<string, number>;
-    q15: Record<string, number>;
-    q18: number;
-    q19: number;
-    q21: number;
-    q22: number;
-    ideasHeard: number;
-    respect: number;
-    teamPreference: number;
-    strengths: string[];
-    challenges: string[];
-    teamValues: string[];
-    visioningExercise: string[];
-    clayActivity: number;
-    sixW2h: number;
-    riverOfLife: number;
-    aiActivity: number;
-    gameActivity: number;
-    laptopActivity: number;
-    fieldActivity: number;
-    feelingsChart: number;
-    caseStudy: number;
-    interventionPlanning: number;
-    facilitatorRating: number;
-    safeLearningEnvironment: number;
-    clearInstructions: number;
-    leadership: number;
-    criticalThinking: number;
-    empathy: number;
-    problemSolving: number;
-    communication: number;
-    justiceUnderstanding: number;
-    overallSatisfaction: number;
-    suggestions: string[];
+export type AnswerValue = number | string | string[];
+
+export interface ParticipantRecord {
+  participantId: string;
+  name: string | null;
+  answers: {
+    a: Record<string, AnswerValue>;
+    b: Record<string, AnswerValue>;
+    c: Record<string, AnswerValue>;
   };
 }
 
@@ -158,44 +140,34 @@ export interface AnalyticsSnapshot {
   workshopId?: string;
   participants: number;
   completedSurveys: number;
+  dimensions: TopicMetric[];
   workshopImpactScore: number;
   learningGainIndex: number;
   misconceptionCorrectionIndex: number;
-  identityGrowth: number;
-  problemSolvingGrowth: number;
-  overallSatisfaction: number;
-  identityTopics: TopicMetric[];
-  creativePedagogy: TopicMetric;
-  problemSolving: TopicMetric;
-  citizenSensitivity: {
-    before: number;
-    after: number;
-    change: number;
-  };
+  dimensionGrowth: number;
+  overallSatisfaction: number | null;
   misconceptionInsights: InsightData[];
   learningGainInsights: InsightData[];
-  teamCollaboration: {
-    ideasHeard: number;
-    respect: number;
-    teamPreference: number;
-    strengths: string[];
-    challenges: string[];
-    teamValues: string[];
-    visioningExercise: string[];
-  };
+  skills: Array<{ name: string; value: number }>;
   activities: Array<{
     name: string;
     rating: number;
     category: string;
     description: string;
   }>;
-  skills: Array<{ name: string; value: number }>;
   facilitator: {
-    averageRating: number;
-    safeEnvironment: number;
-    clearInstructions: number;
+    averageRating: number | null;
+    safeEnvironment: number | null;
+    clearInstructions: number | null;
     suggestions: string[];
-  };
+  } | null;
+  collaboration: {
+    ideasHeard: number | null;
+    respect: number | null;
+    teamPreference: number | null;
+    strengths: string[];
+    challenges: string[];
+  } | null;
   educatorInsights: string[];
 }
 

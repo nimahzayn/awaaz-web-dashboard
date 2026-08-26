@@ -74,9 +74,11 @@ export function ImpactReportContent({ workshop, analytics }: ImpactReportContent
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Participants", value: analytics.participants, icon: Users },
-          { label: "Satisfaction", value: `${analytics.overallSatisfaction}/5`, icon: TrendingUp },
+          ...(analytics.overallSatisfaction !== null
+            ? [{ label: "Satisfaction", value: `${analytics.overallSatisfaction.toFixed(1)}/5`, icon: TrendingUp }]
+            : []),
           { label: "Learning Gain", value: `+${analytics.learningGainIndex}`, icon: TrendingUp },
-          { label: "Identity Growth", value: `+${analytics.identityGrowth}`, icon: TrendingUp },
+          { label: "Dimension Growth", value: `+${analytics.dimensionGrowth}`, icon: TrendingUp },
         ].map((m) => (
           <div key={m.label} className="rounded-2xl border border-border/60 bg-surface p-5 text-center">
             <p className="text-2xl font-bold text-foreground">{m.value}</p>
@@ -89,7 +91,7 @@ export function ImpactReportContent({ workshop, analytics }: ImpactReportContent
         <h3 className="text-base font-semibold text-foreground">Learning Journey Summary</h3>
         <div className="rounded-2xl border border-border/60 bg-surface p-6">
           <div className="flex items-center justify-between">
-            {analytics.identityTopics.map((t) => (
+            {analytics.dimensions.map((t) => (
               <div key={t.topic} className="text-center">
                 <p className="text-xs text-muted-foreground">{t.topic}</p>
                 <p className="mt-1 text-lg font-bold text-foreground">{t.a.toFixed(1)} → {t.c.toFixed(1)}</p>

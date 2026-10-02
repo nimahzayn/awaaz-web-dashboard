@@ -12,6 +12,7 @@ const sql = neon(url);
 
 async function run() {
   await sql`ALTER TABLE workshops
+    ADD COLUMN IF NOT EXISTS data_config JSONB,
     ADD COLUMN IF NOT EXISTS a_uploaded_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS b_uploaded_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS c_uploaded_at TIMESTAMPTZ,

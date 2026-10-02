@@ -15,12 +15,16 @@ function stageAverage(
   stage: "a" | "b" | "c",
   dimensions: DimensionMatch[]
 ): number | null {
-  const keyForStage = (d: DimensionMatch) =>
-    stage === "a" ? d.a.key : stage === "b" ? d.b.key : d.c.key;
+  const keyForStage = (d: DimensionMatch) => {
+    const ref = stage === "a" ? d.a : stage === "b" ? d.b : d.c;
+    return ref?.key;
+  };
 
   const values: number[] = [];
   for (const dim of dimensions) {
-    const v = record.answers[stage]?.[keyForStage(dim)];
+    const key = keyForStage(dim);
+    if (!key) continue;
+    const v = record.answers[stage]?.[key];
     if (typeof v === "number") values.push(v);
   }
   if (values.length === 0) return null;

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS workshops (
   form_b_data JSONB,
   form_c_data JSONB,
   dimension_map JSONB,
+  data_config JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -2,20 +2,30 @@
 
 import type { TopicMetric } from "@/types";
 
-export function PerceptionShiftSection({ topics }: { topics: TopicMetric[] }) {
+export function PerceptionShiftSection({
+  topics,
+  title = "Misconception Correction",
+  subtitle = "How participants revised their initial assumptions through the workshop experience.",
+  variant = "abc",
+}: {
+  topics: TopicMetric[];
+  title?: string;
+  subtitle?: string;
+  variant?: "abc" | "pre_post";
+}) {
   return (
     <section className="space-y-6">
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Perception Shift</p>
-        <h2 className="text-2xl font-semibold text-foreground">Misconception Correction</h2>
-        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          How participants revised their initial assumptions through the workshop experience.
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+          {variant === "pre_post" ? "Before vs After" : "Perception Shift"}
         </p>
+        <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       </div>
 
       <div className="space-y-4">
         {topics.map((topic) => {
-          const gap = topic.a - topic.b;
+          const gap = variant === "pre_post" ? topic.c - topic.a : topic.a - topic.b;
           return (
             <div key={topic.topic} className="rounded-2xl border border-border/60 bg-surface p-6">
               <div className="flex items-start justify-between">

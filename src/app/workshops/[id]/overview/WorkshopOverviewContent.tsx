@@ -18,8 +18,8 @@ interface WorkshopOverviewContentProps {
 
 export function WorkshopOverviewContent({ workshop, analytics, hasData, dataStatus }: WorkshopOverviewContentProps) {
   if (!hasData || !analytics) {
-    const formsUploaded = dataStatus?.a && dataStatus?.b && dataStatus?.c;
-    const missingFormC = dataStatus?.a && dataStatus?.b && !dataStatus?.c;
+    const anyForm = dataStatus?.a || dataStatus?.b || dataStatus?.c;
+    const needsAnalysis = anyForm && !dataStatus?.analysis;
 
     return (
       <div className="space-y-10">
@@ -38,7 +38,7 @@ export function WorkshopOverviewContent({ workshop, analytics, hasData, dataStat
               </span>
             )}
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-              {formsUploaded ? "Ready to Analyze" : "Draft"}
+              {needsAnalysis ? "Ready to Analyze" : "Draft"}
             </span>
           </div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl text-foreground sm:text-4xl">
@@ -48,39 +48,39 @@ export function WorkshopOverviewContent({ workshop, analytics, hasData, dataStat
 
         <div className="rounded-2xl border border-border/60 bg-surface px-12 py-20 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/5">
-            {formsUploaded ? (
+            {needsAnalysis ? (
               <Sparkles className="h-7 w-7 text-primary/40" />
             ) : (
               <Upload className="h-7 w-7 text-primary/40" />
             )}
           </div>
           <h3 className="text-lg font-semibold text-foreground">
-            {formsUploaded
+            {needsAnalysis
               ? "Analysis not generated yet"
-              : missingFormC
-                ? "Form C still needed"
+              : anyForm
+                ? "Upload more forms or generate analysis"
                 : "No survey data uploaded yet"}
           </h3>
           <p className="mt-2 max-w-md mx-auto text-sm leading-relaxed text-muted-foreground">
-            {formsUploaded
-              ? "All three forms are uploaded. Go to Settings and click Generate Analysis to create your overview."
-              : missingFormC
-                ? "Forms A and B are uploaded. Upload Form C (Current Understanding) in Settings to continue."
-                : "Upload your Form A, Form B, and Form C survey sheets to begin generating participant insights, learning journeys, and impact reports."}
+            {needsAnalysis
+              ? "Your survey file(s) are uploaded. Open Settings to generate analysis from whichever forms you provided (A, B, and/or C)."
+              : anyForm
+                ? "You can upload additional forms in Settings, or generate insights from the forms you have already."
+                : "Upload one or more survey files (Form A, B, and/or C) in Settings. Analysis adapts to the forms you provide."}
           </p>
           <Link
             href={`/workshops/${workshop.id}/settings`}
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
           >
-            {formsUploaded ? (
+            {anyForm ? (
               <>
                 <Sparkles className="h-4 w-4" />
-                Generate Analysis
+                {needsAnalysis ? "Generate Analysis" : "Open Settings"}
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4" />
-                Upload Survey Files
+                Upload in Settings
               </>
             )}
           </Link>

@@ -2,6 +2,14 @@
 
 import sql from "@/lib/db";
 import type { Workshop } from "@/types";
+import {
+  DEFAULT_DATA_CONFIG,
+  EMPTY_DATA_CONFIG,
+  sourcesForFormCount,
+  type SelectedFormCount,
+  type WorkshopDataConfig,
+} from "@/types/data-model";
+import { rebuildConfigFromSources } from "./analysis-capabilities";
 
 export async function getWorkshops(): Promise<Workshop[]> {
   const rows = await sql`
@@ -153,6 +161,53 @@ export async function getAnalytics(id: string): Promise<any | null> {
 
 export async function getFormData(id: string, stage: "a" | "b" | "c") {
   return getFormDataRaw(id, stage);
+}
+
+export async function ensureEmptyDataConfigIfMissing(id: string): Promise<WorkshopDataConfig> {
+  const rows = await sql`SELECT data_config FROM workshops WHERE id = ${id}`;
+  if (rows[0]?.data_config != null) {
+    return getWorkshopDataConfig(id);
+  }
+  await saveWorkshopDataConfig(id, { ...EMPTY_DATA_CONFIG });
+  return { ...EMPTY_DATA_CONFIG };
+}
+
+export async function getWorkshopDataConfig(id: string): Promise<WorkshopDataConfig> {
+  const rows = await sql`SELECT data_config FROM workshops WHERE id = ${id}`;
+  const raw = rows[0]?.data_config;
+  if (!raw) return { ...EMPTY_DATA_CONFIG };
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  return { ...EMPTY_DATA_CONFIG, ...parsed };
+}
+
+export async function saveWorkshopDataConfig(id: string, config: WorkshopDataConfig): Promise<void> {
+  await sql.query(`UPDATE workshops SET data_config = $1::jsonb WHERE id = $2`, [JSON.stringify(config), id]);
+}
+
+export async function clearFormStage(id: string, stage: "a" | "b" | "c"): Promise<void> {
+  const col = stageColumn(stage);
+  await sql.query(`UPDATE workshops SET ${col} = NULL, ${stage}_count = 0 WHERE id = $1`, [id]);
+}
+
+export async function applyFormCount(id: string, formCount: SelectedFormCount): Promise<WorkshopDataConfig> {
+  const existing = await getWorkshopDataConfig(id);
+  const sources = sourcesForFormCount(formCount, existing.sources);
+
+  const stagesToKeep = new Set(sources.map((s) => s.stage));
+  for (const stage of ["a", "b", "c"] as const) {
+    if (!stagesToKeep.has(stage)) await clearFormStage(id, stage);
+  }
+
+  const rebuilt = rebuildConfigFromSources(formCount, sources);
+  const config: WorkshopDataConfig = {
+    ...existing,
+    formCount,
+    sources,
+    ...rebuilt,
+    confirmedAt: null,
+  };
+  await saveWorkshopDataConfig(id, config);
+  return config;
 }
 
 export async function workshopHasData(id: string): Promise<{

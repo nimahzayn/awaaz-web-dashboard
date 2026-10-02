@@ -1,4 +1,8 @@
+import type { AnalysisCapability, AnalysisMode } from "./data-model";
+
 export type WorkshopStatus = "draft" | "uploaded" | "analyzed";
+
+export * from "./data-model";
 
 export type Stage = "a" | "b" | "c";
 
@@ -10,9 +14,9 @@ export interface QuestionRef {
 export interface DimensionMatch {
   id: string;
   name: string;
-  a: QuestionRef;
-  b: QuestionRef;
-  c: QuestionRef;
+  a?: QuestionRef;
+  b?: QuestionRef;
+  c?: QuestionRef;
 }
 
 export interface Workshop {
@@ -138,6 +142,10 @@ export interface TopicMetric {
 
 export interface AnalyticsSnapshot {
   workshopId?: string;
+  analysisMode?: AnalysisMode;
+  capabilities?: AnalysisCapability[];
+  unavailableAnalyses?: string[];
+  dataWarnings?: string[];
   participants: number;
   completedSurveys: number;
   dimensions: TopicMetric[];

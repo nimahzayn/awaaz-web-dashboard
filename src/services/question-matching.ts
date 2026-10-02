@@ -162,6 +162,23 @@ export function detectIdColumn(headers: string[], rows: Record<string, any>[]): 
 const NAME_COLUMN_RE =
   /^(?:full(?:name)?|first(?:name)?|last(?:name)?|given(?:name)?|sur(?:name)?|middle(?:name)?|name|yourname|yourfullname|participantname|respondentname|nameonyourcertificate|.*prefer.*certificate|certificate.*name)$/;
 
+const SURVEY_QUESTION_HINT =
+  /how|what|which|when|where|why|rate|rating|your|did|do|does|were|was|please|would|think|feel|overall|satisfaction|activit|session|exercise|scale|point|agree|strongly|useful|enjoy|effective|\?/i;
+
+const ACTIVITY_NAME_HINT =
+  /\b(activity|activities|exercise|clay|mascot|river|life|drawing|bingo|visioning|worksheet|case|study|intervention|planning|feelings|chart|6w|game|session|method|roleplay|breakout|field|laptop|worksheet)\b/i;
+
+/** Wide-format sheets sometimes use participant or facilitator names as column headers. */
+export function looksLikePersonNameHeader(label: string): boolean {
+  let t = String(label ?? "").trim().replace(/^\d+[.)]\s*/, "");
+  if (!t || t.length > 40) return false;
+  if (SURVEY_QUESTION_HINT.test(t)) return false;
+  if (ACTIVITY_NAME_HINT.test(t)) return false;
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length === 0 || words.length > 3) return false;
+  return words.every((w) => /^[A-Za-z][A-Za-z'.-]*$/.test(w));
+}
+
 export function isNameColumn(key: string): boolean {
   const cleaned = String(key ?? "").toLowerCase().replace(/[^a-z]/g, "");
   return NAME_COLUMN_RE.test(cleaned);
@@ -174,6 +191,7 @@ export function extractQuestions(headers: Record<string, string>, idColumn: stri
     const text = String(display ?? "").trim();
     if (!text) continue;
     if (isNameColumn(key)) continue;
+    if (looksLikePersonNameHeader(text) || looksLikePersonNameHeader(key.replace(/_/g, " "))) continue;
     questions.push({ key, text });
   }
   return questions;
@@ -410,6 +428,62 @@ export function matchDimensions(
   }
 
   return dimensions;
+}
+
+/** Match questions across two survey stages (pre/post, pre/retro, retro/post). */
+export function matchDimensionsPair(
+  questionsLeft: QuestionRef[],
+  questionsRight: QuestionRef[]
+): DimensionMatch[] {
+  const scoreMatrix = questionsLeft.map((ql) =>
+    questionsRight.map((qr) => questionSimilarity(ql.text, qr.text))
+  );
+  const pairing = greedyPair(scoreMatrix, questionsLeft.length, questionsRight.length);
+
+  const dimensions: DimensionMatch[] = [];
+  const usedNames = new Map<string, number>();
+
+  for (const p of pairing.pairs) {
+    const left = questionsLeft[p.aIdx];
+    const right = questionsRight[p.bIdx];
+    const refs = [left, right];
+    let name = deriveDimensionName(refs);
+    const count = usedNames.get(name) ?? 0;
+    usedNames.set(name, count + 1);
+    if (count > 0) name = `${name} ${count + 1}`;
+    dimensions.push({
+      id: `dim-${dimensions.length + 1}`,
+      name,
+      a: left,
+      b: right,
+    });
+  }
+
+  return dimensions;
+}
+
+export function matchDimensionsForStages(
+  stageQuestions: Partial<Record<"a" | "b" | "c", QuestionRef[]>>
+): DimensionMatch[] {
+  const stages = (["a", "b", "c"] as const).filter((s) => (stageQuestions[s]?.length ?? 0) > 0);
+  if (stages.length === 3) {
+    return matchDimensions(stageQuestions.a!, stageQuestions.b!, stageQuestions.c!);
+  }
+  if (stages.length === 2) {
+    const [s1, s2] = stages;
+    const pair = matchDimensionsPair(stageQuestions[s1]!, stageQuestions[s2]!);
+    return pair.map((d) => {
+      const dim: DimensionMatch = { id: d.id, name: d.name };
+      if (s1 === "a") dim.a = d.a;
+      else if (s1 === "b") dim.b = d.a;
+      else dim.c = d.a;
+      if (s2 === "a") dim.a = d.b;
+      else if (s2 === "b") dim.b = d.b;
+      else dim.c = d.b;
+      return dim;
+    });
+  }
+  return [];
 }
 
 export type AnswerValue = number | string | string[];

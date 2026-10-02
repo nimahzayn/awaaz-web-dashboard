@@ -1,5 +1,5 @@
 import type { DimensionMatch, ParticipantRecord, QuestionRef, Stage } from "@/types";
-import { detectIdColumn, isNameColumn } from "./question-matching";
+import { detectIdColumn, isNameColumn, looksLikePersonNameHeader } from "./question-matching";
 import { getDimensionMap, getParticipantRecords, getFormData } from "./workshops";
 
 export interface AnalyticsSource {
@@ -31,7 +31,9 @@ export async function getAnalyticsSource(workshopId: string): Promise<AnalyticsS
     for (const [key, text] of Object.entries(form.headers)) {
       if (!key || key === idColumn) continue;
       if (isNameColumn(key)) continue;
-      allQuestions.push({ stage: form.stage, ref: { key, text: text ?? key } });
+      const label = String(text ?? key).trim();
+      if (looksLikePersonNameHeader(label) || looksLikePersonNameHeader(key.replace(/_/g, " "))) continue;
+      allQuestions.push({ stage: form.stage, ref: { key, text: label || key } });
     }
   }
 

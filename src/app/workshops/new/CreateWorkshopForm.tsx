@@ -1,29 +1,26 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { createWorkshop } from "@/services/workshops";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import { createWorkshopFromForm } from "@/services/workshop-actions";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export function CreateWorkshopForm() {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50"
+    >
+      {pending ? "Creating..." : "Create Workshop"}
+    </button>
+  );
+}
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    startTransition(async () => {
-      const workshop = await createWorkshop({
-        name: form.get("name") as string,
-        cohort: form.get("cohort") as string,
-        location: form.get("location") as string,
-        date: form.get("date") as string,
-        description: (form.get("description") as string) || "",
-      });
-      router.push(`/workshops/${workshop.id}/overview`);
-    });
-  }
+export function CreateWorkshopForm() {
+  const [state, formAction] = useActionState(createWorkshopFromForm, null);
 
   return (
     <div className="mx-auto max-w-lg space-y-8">
@@ -43,7 +40,12 @@ export function CreateWorkshopForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form action={formAction} method="post" className="space-y-5">
+        {state?.error ? (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            {state.error}
+          </p>
+        ) : null}
         <div className="space-y-2">
           <label htmlFor="name" className="text-sm font-medium text-foreground">
             Workshop Name
@@ -110,13 +112,7 @@ export function CreateWorkshopForm() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50"
-        >
-          {pending ? "Creating..." : "Create Workshop"}
-        </button>
+        <SubmitButton />
       </form>
     </div>
   );

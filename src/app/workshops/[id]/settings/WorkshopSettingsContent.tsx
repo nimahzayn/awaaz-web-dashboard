@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition, useRef } from "react";
-import { uploadFormA, uploadFormB, uploadFormC, generateAnalysis, deleteWorkshop } from "@/services/workshop-actions";
+import { useState } from "react";
+import { deleteWorkshop } from "@/services/workshop-actions";
 import { Upload, Loader2, Sparkles, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import type { Workshop } from "@/types";
 import Link from "next/link";
@@ -18,16 +18,61 @@ interface DataStatus {
   matchedCount: number;
 }
 
+type FormStage = "a" | "b" | "c";
+
 interface FormCardProps {
+  workshopId: string;
+  stage: FormStage;
   title: string;
   subtitle: string;
   uploaded: boolean;
   count: number;
-  onUpload: (formData: FormData) => Promise<void>;
+  onUploaded: () => void;
 }
 
-function UploadFormCard({ title, subtitle, uploaded, count, onUpload }: Omit<FormCardProps, "pending">) {
-  const formRef = useRef<HTMLFormElement>(null);
+function UploadFormCard({
+  workshopId,
+  stage,
+  title,
+  subtitle,
+  uploaded,
+  count,
+  onUploaded,
+}: FormCardProps) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set("file", file);
+      const res = await fetch(`/api/workshops/${workshopId}/upload?stage=${stage}`, {
+        method: "POST",
+        body: fd,
+      });
+      let data: { success?: boolean; error?: string };
+      try {
+        data = (await res.json()) as { success?: boolean; error?: string };
+      } catch {
+        data = { success: false, error: res.statusText || "Upload failed." };
+      }
+      if (!res.ok || !data.success) {
+        setError(data.error ?? "Upload failed. Check the file format and try again.");
+        return;
+      }
+      onUploaded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-border/60 bg-surface p-6 space-y-4">
@@ -46,53 +91,73 @@ function UploadFormCard({ title, subtitle, uploaded, count, onUpload }: Omit<For
             <p className="mt-1 text-xs text-muted-foreground">{subtitle} · Not uploaded yet</p>
           )}
         </div>
+        {uploading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
       </div>
-      <form
-        ref={formRef}
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!formRef.current) return;
-          const fd = new FormData(formRef.current);
-          formRef.current.reset();
-          void onUpload(fd);
-        }}
-        className="flex items-center gap-3"
-      >
-        <label className="flex-1 cursor-pointer">
-          <input type="file" name="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { if (e.target.files?.[0]) formRef.current?.requestSubmit(); }} />
-          <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors">
-            <Upload className="h-4 w-4" />
-            {uploaded ? "Replace file" : "Upload CSV or XLSX"}
-          </div>
-        </label>
-      </form>
+      <label className={`flex cursor-pointer items-center gap-3 ${uploading ? "pointer-events-none opacity-60" : ""}`}>
+        <input
+          type="file"
+          accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+          className="hidden"
+          disabled={uploading}
+          onChange={handleFileChange}
+        />
+        <div className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5">
+          <Upload className="h-4 w-4" />
+          {uploading ? "Uploading…" : uploaded ? "Replace file" : "Upload CSV or XLSX"}
+        </div>
+      </label>
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }
 
 export function WorkshopSettingsContent({ workshop, dataStatus }: { workshop: Workshop; dataStatus: DataStatus }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [generateSuccess, setGenerateSuccess] = useState<string | null>(null);
 
-  async function handleUpload(uploader: (id: string, formData: FormData) => Promise<any>, formData: FormData) {
-    startTransition(async () => {
-      await uploader(workshop.id, formData);
-      router.refresh();
-    });
+  function refreshAfterUpload() {
+    router.refresh();
   }
 
   async function handleGenerate() {
-    startTransition(async () => {
+    setGenerateError(null);
+    setGenerateSuccess(null);
+    setGenerating(true);
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 4 * 60 * 1000);
+      const res = await fetch(`/api/workshops/${workshop.id}/generate-analysis`, {
+        method: "POST",
+        cache: "no-store",
+        signal: controller.signal,
+      }).finally(() => window.clearTimeout(timeout));
+      let data: { success?: boolean; error?: string; warnings?: string[] };
       try {
-        const result = await generateAnalysis(workshop.id);
-        if (result && !result.success && "error" in result) {
-          alert("Error: " + result.error);
-        }
-      } catch (err) {
-        alert("Failed: " + String(err));
+        data = (await res.json()) as { success?: boolean; error?: string; warnings?: string[] };
+      } catch {
+        data = { success: false, error: res.statusText || "Analysis request failed." };
       }
+      if (!res.ok || !data.success) {
+        setGenerateError(data.error ?? "Could not generate analysis. Check your survey files and try again.");
+        return;
+      }
+      const warnNote =
+        data.warnings?.length ? ` (${data.warnings.length} note${data.warnings.length > 1 ? "s" : ""} in logs)` : "";
+      setGenerateSuccess(`Analysis saved. Open Insights or Overview to see updated results.${warnNote}`);
       router.refresh();
-    });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setGenerateError(
+          "Request timed out after 4 minutes. Refresh Settings — analysis may still have saved."
+        );
+      } else {
+        setGenerateError(err instanceof Error ? err.message : "Analysis request failed.");
+      }
+    } finally {
+      setGenerating(false);
+    }
   }
 
   async function handleDelete() {
@@ -106,7 +171,7 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: { workshop: Wo
     }
   }
 
-  const canGenerate = dataStatus.a && dataStatus.b && dataStatus.c;
+  const canGenerateLegacy = dataStatus.a || dataStatus.b || dataStatus.c;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -148,48 +213,64 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: { workshop: Wo
         <h3 className="text-sm font-semibold text-foreground">Survey Files</h3>
 
         <UploadFormCard
+          workshopId={workshop.id}
+          stage="a"
           title="Form A · Original Understanding"
           subtitle="Before the workshop"
           uploaded={dataStatus.a}
           count={dataStatus.aCount}
-          onUpload={(fd) => handleUpload(uploadFormA, fd)}
+          onUploaded={refreshAfterUpload}
         />
 
         <UploadFormCard
+          workshopId={workshop.id}
+          stage="b"
           title="Form B · Retrospective Reflection"
           subtitle="Revised pre-workshop view"
           uploaded={dataStatus.b}
           count={dataStatus.bCount}
-          onUpload={(fd) => handleUpload(uploadFormB, fd)}
+          onUploaded={refreshAfterUpload}
         />
 
         <UploadFormCard
+          workshopId={workshop.id}
+          stage="c"
           title="Form C · Current Understanding"
           subtitle="After the workshop"
           uploaded={dataStatus.c}
           count={dataStatus.cCount}
-          onUpload={(fd) => handleUpload(uploadFormC, fd)}
+          onUploaded={refreshAfterUpload}
         />
       </div>
 
-      {canGenerate && (
-        <button
-          onClick={handleGenerate}
-          disabled={pending}
-          className="w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {pending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Generating Analysis...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" />
-              Generate Analysis
-            </>
+      {canGenerateLegacy && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            This may take up to a minute for large survey files. Keep this tab open until it finishes.
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleGenerate()}
+            disabled={generating}
+            className="w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating Analysis...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Generate Analysis
+              </>
+            )}
+          </button>
+          {generateError && <p className="text-xs text-red-600">{generateError}</p>}
+          {generateSuccess && (
+            <p className="text-xs text-[#2d8a62]">{generateSuccess}</p>
           )}
-        </button>
+        </div>
       )}
 
       {dataStatus.analysis && (
@@ -222,11 +303,14 @@ export function WorkshopSettingsContent({ workshop, dataStatus }: { workshop: Wo
         </button>
       </div>
 
-      {pending && (
+      {generating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface p-8 shadow-xl">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium text-foreground">Processing...</p>
+            <p className="text-sm font-medium text-foreground">Generating analysis…</p>
+            <p className="max-w-xs text-center text-xs text-muted-foreground">
+              Merging forms and computing metrics. This can take about a minute.
+            </p>
           </div>
         </div>
       )}

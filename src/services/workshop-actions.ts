@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import * as XLSX from "xlsx";
 import type { AnswerValue, DimensionMatch, Stage } from "@/types";
 import {
@@ -20,6 +22,7 @@ import {
   updateWorkshopStatus,
   workshopHasData,
   deleteWorkshop as deleteWorkshopFromStore,
+  createWorkshop,
 } from "./workshops";
 
 type SheetRow = Record<string, any>;
@@ -91,10 +94,16 @@ async function uploadForm(
   extra[`${stage}Count`] = parsed.rows.length;
   await updateWorkshopStatus(workshopId, "uploaded", extra as any);
 
-  await tryMerge(workshopId);
+  const base = `/workshops/${workshopId}`;
+  revalidatePath(`${base}/settings`);
+  revalidatePath(`${base}/overview`);
+  revalidatePath(`${base}/insights`);
+  revalidatePath(`${base}/impact-report`);
 
   return { success: true, count: parsed.rows.length };
 }
+
+export type FormUploadResult = { success: boolean; error?: string; count?: number };
 
 export async function uploadFormA(workshopId: string, formData: FormData) {
   return uploadForm("a", "Form A", workshopId, formData);
@@ -204,9 +213,9 @@ function normalizeScales(
 ) {
   const questionKeys = new Set<string>();
   for (const d of dimensions) {
-    questionKeys.add(d.a.key);
-    questionKeys.add(d.b.key);
-    questionKeys.add(d.c.key);
+    if (d.a) questionKeys.add(d.a.key);
+    if (d.b) questionKeys.add(d.b.key);
+    if (d.c) questionKeys.add(d.c.key);
   }
 
   for (const stage of ["a", "b", "c"] as const) {
@@ -229,40 +238,52 @@ function normalizeScales(
 }
 
 export async function generateAnalysis(workshopId: string) {
-  const status = await workshopHasData(workshopId);
-  if (!status.a || !status.b || !status.c) {
-    return { success: false, error: "All three forms (A, B, and C) must be uploaded first." };
-  }
-
-  try {
-    const mergeResult = await tryMerge(workshopId);
-    if (!mergeResult) {
-      return {
-        success: false,
-        error:
-          "Could not match participants and questions across the three forms. Check that the same participants appear in each file and that the questions correspond.",
-      };
-    }
-
-    const { computeAnalytics } = await import("./analytics");
-    const analytics = await computeAnalytics(workshopId);
-    const { saveAnalytics } = await import("./workshops");
-    await saveAnalytics(workshopId, analytics);
-    await updateWorkshopStatus(workshopId, "analyzed", {
-      analyzedAt: new Date().toISOString(),
-    });
-
-    return { success: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("generateAnalysis failed:", err);
-    return { success: false, error: `Analysis generation failed: ${message}` };
-  }
+  const { generateWorkshopAnalysis } = await import("./generate-workshop-analysis");
+  return generateWorkshopAnalysis(workshopId);
 }
 
 export async function deleteWorkshop(workshopId: string) {
   await deleteWorkshopFromStore(workshopId);
   return { success: true };
+}
+
+export type CreateWorkshopFormState = { error?: string } | null;
+
+export async function createWorkshopFromForm(
+  _prevState: CreateWorkshopFormState,
+  formData: FormData
+): Promise<CreateWorkshopFormState> {
+  const name = String(formData.get("name") ?? "").trim();
+  const cohort = String(formData.get("cohort") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim();
+  const date = String(formData.get("date") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!name || !cohort || !location || !date) {
+    return { error: "Please fill in all required workshop fields." };
+  }
+
+  try {
+    const workshop = await createWorkshop({
+      name,
+      cohort,
+      location,
+      date,
+      description,
+    });
+    redirect(`/workshops/${workshop.id}/overview`);
+  } catch (err) {
+    if (typeof err === "object" && err !== null && "digest" in err) {
+      const digest = String((err as { digest?: string }).digest ?? "");
+      if (digest.startsWith("NEXT_REDIRECT")) {
+        throw err;
+      }
+    }
+    const message = err instanceof Error ? err.message : "Could not create workshop.";
+    return { error: message };
+  }
+
+  return null;
 }
 
 export async function parseSheetData(base64Content: string) {

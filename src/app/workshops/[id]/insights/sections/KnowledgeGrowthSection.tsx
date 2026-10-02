@@ -2,7 +2,13 @@
 
 import type { AnalyticsSnapshot } from "@/types";
 
-export function KnowledgeGrowthSection({ analytics }: { analytics: AnalyticsSnapshot }) {
+export function KnowledgeGrowthSection({
+  analytics,
+  showGain = true,
+}: {
+  analytics: AnalyticsSnapshot;
+  showGain?: boolean;
+}) {
   return (
     <section className="space-y-6">
       <div className="space-y-2">
@@ -31,19 +37,28 @@ export function KnowledgeGrowthSection({ analytics }: { analytics: AnalyticsSnap
         ))}
       </div>
 
-      <div className="rounded-2xl border border-border/60 bg-surface p-6">
-        <h3 className="text-sm font-semibold text-foreground">Dimension Growth</h3>
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div className="rounded-xl bg-primary/5 p-4 text-center">
-            <p className="text-2xl font-bold text-primary">+{analytics.learningGainIndex}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Average Learning Gain</p>
-          </div>
-          <div className="rounded-xl bg-teal-light p-4 text-center">
-            <p className="text-2xl font-bold text-teal">+{analytics.misconceptionCorrectionIndex}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Misconception Correction</p>
+      {showGain && analytics.dimensions.length > 0 && (
+        <div className="rounded-2xl border border-border/60 bg-surface p-6">
+          <h3 className="text-sm font-semibold text-foreground">Dimension Growth</h3>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            {analytics.learningGainIndex !== 0 && (
+              <div className="rounded-xl bg-primary/5 p-4 text-center">
+                <p className="text-2xl font-bold text-primary">
+                  {analytics.learningGainIndex >= 0 ? "+" : ""}
+                  {analytics.learningGainIndex}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Average Learning / Change</p>
+              </div>
+            )}
+            {analytics.misconceptionCorrectionIndex !== 0 && (
+              <div className="rounded-xl bg-teal-light p-4 text-center">
+                <p className="text-2xl font-bold text-teal">+{analytics.misconceptionCorrectionIndex}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Misconception Correction</p>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
